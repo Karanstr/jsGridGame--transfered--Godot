@@ -88,16 +88,13 @@ window.speed = 1;
 window.gravity = new Vector(0, 0, 1)
 const game = setInterval(() => {
   Render.drawBox(new Vector(0, 0, 0), new Vector(canData.right, canData.bottom, 1), 'white')
-  let random = (Math.random()-.5)/100
-  if (up || down) { current.velocity.add(new Vector(0, random, 1), true) }
-  if (left || right) { current.velocity.add(new Vector(random, 0, 1), true) }
   if (up && down) { }
   else if (up) { current.velocity.add(new Vector(0, -window.speed), true) }
   else if (down) { current.velocity.add(new Vector(0, window.speed), true) }
   if (left && right) { }
   else if (left) { current.velocity.add(new Vector(-window.speed, 0), true) }
   else if (right) { current.velocity.add(new Vector(window.speed, 0), true) }
-  current.velocity.add(window.gravity, true)
+  current.velocity.add(window.gravity, true);
 
   list.forEach((object) => {
     object.Render();
