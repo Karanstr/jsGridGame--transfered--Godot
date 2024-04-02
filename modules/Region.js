@@ -115,9 +115,6 @@ class Region extends Quadtree {
   }
   //Corner End
   //Collision/Physics Start
-  //Collide against one
-  //Don't collide against 2
-  //Collide against 3
   keyCull(velocity, keys, sign) {
     if (keys == undefined) { return }
     let keyList = new Set([0, 1, 2, 3]), newVelocity = velocity.multiplyScalar(sign);
@@ -137,8 +134,6 @@ class Region extends Quadtree {
     }
     return keyOptions[0]
   }
-
-
 
   pointCull(velocity) {
     let cullSet = new Set([0, 1, 2, 3]);
@@ -202,8 +197,41 @@ class Region extends Quadtree {
     return [hitPoint, wallHit]
   }
 
+  checkCollis(target, velocity) {
+    let solution = velocity.clone();
+    let cullSet = this.pointCull(velocity);
+    let culledCorners = []; //List of all valid corners.
+    this.cornerList.forEach((corner) => { if (cullSet.has(corner.direction)) { culledCorners.push(corner) } })
+    for (let i = 0; i < culledCorners.length; i++) {
+      let corner = culledCorners[i];
+      let info = target.getHit(corner.point.add(this.position), velocity);
+    }
+  }
+  //Start Hate
+  getHit(start, delta) {
+    let distance = delta.length(); if (distance == 0) { return }
+    let traveled = 0, point = start, keys = this.getKeys(point), result, hit = false;
+    let key = this.keyCull(delta, keys, -1);
+    while (traveled < delta && hit == false) {
+      result = this.stepArea(point, delta, key);
+      let nextPoint = result[0];
+      keys = this.getKeys(nextPoint);
+      key = this.keyCull(delta, keys, 1);
+      if (key == undefined) { traveled = delta } //Hitting Edge of Region
+      else {
+        let node = this.getNode(key);
+        let collisionType = this.blockMap.getBlock(node.data).collisionType;
+        if (collisionType != 0) { hit = true } //Hitting Wall
+        else {
+          traveled += nextPoint.subtract(point).length(); point = nextPoint;
+        }
+      }
+    }
+    if (hit) { return [key, result[0], result[1]] }
+  }
+
   checkCollision(start, end) {
-    let delta; if (end.type == 1) { delta = end } else if (end.type == 0) { delta = end.subtract(start); delta.type = 1; }
+    let delta; if (end.type == 1) { delta = end.clone() } else if (end.type == 0) { delta = end.subtract(start); delta.type = 1; }
     let distance = delta.length(); if (distance == 0) { return }
     let traveled = 0, point = start, keys = this.getKeys(point);
     let key = this.keyCull(delta, keys, -1);
@@ -212,7 +240,6 @@ class Region extends Quadtree {
       result = this.stepArea(point, delta, key)
       let nextPoint = result[0]; keys = this.getKeys(nextPoint);
       key = this.keyCull(delta, keys, 1);
-      //Substitute this out for better reception of keyCull?
       if (key == undefined) { traveled = distance } //Hitting void
       else {
         let node = this.getNode(key);
@@ -223,7 +250,7 @@ class Region extends Quadtree {
         }
       }
     }
-    if (hit) { 
+    if (hit) {
       return [key, result[1], result[0]]
     }
   }
@@ -262,41 +289,12 @@ class Region extends Quadtree {
     solution.type = 1;
     this.velocity.subtract(this.velocity.subtract(solution), true)
   }
-
-  solve(start, velocity, boxA, boxB, aHitBWall, aHitBPoint) {
-    let solution = new Vector(0, 0, 1)
-    let centerA = boxA[0].add(boxA[1].divideScalar(2));
-    let centerB = boxB[0].add(boxB[1].divideScalar(2));
-    let boxOffset = centerA.subtract(centerB).abs();
-    let distanceFromCollision = start.subtract(aHitBPoint).abs();
-    let answer = distanceFromCollision.multiply(aHitBWall);
-    Render.outlineBox(hitBox[0], hitBox[1], 'red');
-    //If Hitting Vertical Wall
-    if (aHitBWall.x != 0 && Math.abs(answer.x) < Math.abs(solution.x) && boxOffset.x > boxOffset.y) {
-      solution.x = answer.x
-    }
-    //If Hitting Horizontal Wall
-    if (aHitBWall.y != 0 && Math.abs(answer.y) < Math.abs(solution.y) && boxOffset.x < boxOffset.y) {
-      solution.y = answer.y
-    }
-    return solution
-  }
-
-
-  somePhysicsFunction(target, delta) {
-    let cullSet = this.pointCull(delta)
-    this.cornerList.forEach((corner) => {
-      if (cullSet.has(corner.direction)) {
-        let start = corner.point.add(this.position);
-        let info = target.checkCollision(start, delta, 1);
-      }
-    })
-  }
-
+  //End Hate
   updatePos(force) {
     this.position.add(force, true)
   }
   //Collision/Physics End
+
 }
 
 class Block {
