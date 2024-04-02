@@ -1,7 +1,7 @@
 export { Vector2 as default }
 
-//Position Vectors are type 0;
-//Direction Vectors are type 1;
+//Position(Absolute) Vectors are type 0;
+//Direction(Relative) Vectors are type 1;
 //Scaling Vectors are type 2
 class Vector2 {
   constructor(x, y, type) {

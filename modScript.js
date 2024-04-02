@@ -100,8 +100,7 @@ const game = setInterval(() => {
     object.Render();
     object.drawCorners();
   })
-  p.solveCollision(a)
-
+  p.checkCollis(p.position, p.velocity, a);
   p.updatePos(p.velocity);
   p.velocity = new Vector(0, 0, 1)
   a.updatePos(a.velocity);
