@@ -1,3 +1,4 @@
+
 import Quadtree from "./Quadtree.js";
 import Vector from "./Vector2.js"
 import * as Render from "./Render.js";
@@ -186,7 +187,7 @@ class Region extends Quadtree {
     return keys
   }
 
-  stepSquare(start, delta, key) {
+  stepSquare(start, delta, key, debugColor) {
     let sign = delta.sign(), flip = 1;
     if (key == undefined) { key = 1; flip = -1 }
     let box = this.getBoxDimensions(key);
@@ -202,17 +203,17 @@ class Region extends Quadtree {
     else if (Math.abs(slopeToCorner) < Math.abs(slope)) {
       hitPoint.add(new Vector(1 / slope * wallDistance.y, wallDistance.y, 0), true); hitWall.x = 0;
     }
-    Render.drawPoint(hitPoint, 'red'); Render.drawLine(start, wallDistance, 'orange');
+    Render.drawPoint(hitPoint, debugColor); Render.drawLine(start, wallDistance, 'orange');
 
     return new hitData(hitPoint, hitWall)
   }
 
-  calcHit(start, delta) {
+  calcHit(start, delta, debugColor) {
     let distance = delta.length(); if (distance == 0) { return }
     let traveled = 0, point = start, keys = this.getKeys(point), hit = new hitData(), end = false;
     hit.key = this.keyCull(delta, keys, -1);
     while (traveled < distance && end == false) {
-      hit = this.stepSquare(point, delta, hit.key);
+      hit = this.stepSquare(point, delta, hit.key, debugColor);
       keys = this.getKeys(hit.point);
       hit.key = this.keyCull(delta, keys, 1);
       if (hit.key == undefined) { traveled = delta } //Hitting Edge of Region
@@ -226,32 +227,53 @@ class Region extends Quadtree {
     if (end) { return hit }
   }
 
-  checkCollis(start, velocity, target) {
-    let currentBestSol = velocity.clone()
+  checkAllCollisions(start, velocity, target) {
+    //First direction check
+    let correctedVelocity = velocity.clone();
+    let firstHit = this.checkCollision(start, correctedVelocity, target, 'red')
+    if (firstHit == undefined) { } // If first check returns a hit on only one dimension
+    else if ((correctedVelocity.x != 0 && correctedVelocity.y == 0) || (correctedVelocity.x == 0 && correctedVelocity.y != 0)) { // XOR
+      this.checkCollision(start, correctedVelocity, target, 'blue'); //Second dimension check
+    }
+    velocity.subtract(velocity.subtract(correctedVelocity), true) // Update Velocity
+  }
+
+  //Modifies Velocity Value, returns a new hitData()
+  checkCollision(start, velocity, target, debugColor) {
+    let breakout = false;
     let cullSet = this.pointCull(velocity);
     let culledCorners = []; //List of all valid corners.
     this.cornerList.forEach((corner) => { if (cullSet.has(corner.direction)) { culledCorners.push(corner) } })
     for (let i = 0; i < culledCorners.length; i++) {
-      let corner = culledCorners[i]; 
+      let corner = culledCorners[i];
       let cornerPoint = corner.point.add(start)
-      let hit = target.calcHit(cornerPoint, velocity);
+      let hit = target.calcHit(cornerPoint, velocity, debugColor);
       if (hit != undefined) {
         if (hit.key != undefined) {
           let node = target.getNode(hit.key);
           if (node.data != target.nullVal) { //If not hitting an empty space
             let option = cornerPoint.subtract(hit.point).abs().multiply(hit.wall)
             let filter = this.solve(target, corner.key, hit.key);
-            if (hit.wall.x != 0 && filter.x != 0 && Math.abs(option.x) <= Math.abs(currentBestSol.x)) {
-              currentBestSol.x = option.x;
+
+            if (hit.wall.x != 0 && filter.x != 0 && Math.abs(option.x) <= Math.abs(velocity.x)) {
+              velocity.x = option.x;
+              if (option.x == 0) {
+                breakout = true
+              }
             }
-            if (hit.wall.y != 0 && filter.y != 0 && Math.abs(option.y) <= Math.abs(currentBestSol.y)) {
-              currentBestSol.y = option.y;
+            if (hit.wall.y != 0 && filter.y != 0 && Math.abs(option.y) <= Math.abs(velocity.y)) {
+              velocity.y = option.y;
+              if (option.y == 0) {
+                breakout = true
+              }
+            }
+            if (true == breakout) {
+              return hit
             }
           }
         }
       }
     }
-    this.velocity.subtract(this.velocity.subtract(currentBestSol), true)
   }
 
   //REMEMBER boxOFFSET IS BASED ON start position, NOT hitPosition
@@ -266,7 +288,7 @@ class Region extends Quadtree {
       solution.x = 1;
     }
     //If allowed to hit horizontal wall
-    else if (boxOffset.x < boxOffset.y) {
+    if (boxOffset.x <= boxOffset.y) {
       solution.y = 1;
     }
     return solution

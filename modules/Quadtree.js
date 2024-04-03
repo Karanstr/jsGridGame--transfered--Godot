@@ -274,7 +274,7 @@ class Quadtree {
 
   generateLOD(key) {
     let node = this.getNode(key);
-    if (node == undefined) {throw 'Invalid Key ' + key }
+    if (node == undefined) { throw 'Invalid Key ' + key }
     if (node.type == 0) { console.log('Cannot generateLOD of a leaf: ' + key) }
     else if (node.type == 1) {
       let newKey = key << 2, kidVals = new Set(), lodVal;
