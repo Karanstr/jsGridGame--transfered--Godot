@@ -27,3 +27,4 @@ function drawLine(start, end, color) {
   can.lineTo(end.x, end.y);
   can.stroke();
 }
+ 

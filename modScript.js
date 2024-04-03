@@ -107,3 +107,4 @@ const game = setInterval(() => {
   a.velocity = new Vector(0, 0, 1)
 
 }, 1000 / 60);
+ 
