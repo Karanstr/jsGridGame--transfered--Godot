@@ -8,10 +8,10 @@ window.Vector = Vector;
 
 window.a = new Region(125, 125, 250, 250, new blockMap('#ffffff'));
 window.a.blockMap.addBlock(1, '#777777', 1);
-window.a.Load('8401 8411 8421 8441 8451 84a1 8501 8511 8571 85d1 85f1 8601 8621 8681 86a1 86b1 86e1 8771 87a1 87b1 87d1 87e1')
+window.a.Load('8401 8411 8421 8441 8451 8481 84a1 8501 8511 8541 8571 85d1 85f1 8601 8621 8661 8671 8681 86a1 86b1 86e1 86f1 8721 8731 8751 8761 8771 87a1 87b1')
 window.a.findCorners()
 
-window.p = new Region(250, 50, 20, 20, new blockMap('#ffffff'));
+window.p = new Region(250, 175, 20, 20, new blockMap('#ffffff'));
 window.p.blockMap.addBlock(1, '#dd7777', 1);
 window.p.Load('8011')
 window.p.findCorners()
