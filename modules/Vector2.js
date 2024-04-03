@@ -60,6 +60,5 @@ class Vector2 {
   rotate(angle) {
     throw "Does not exist"
   }
-
+  
 }
- 
