@@ -179,7 +179,7 @@ class Quadtree {
   }
 
   //Save top down using LOD
-  otherSave() { }
+  LODSave() { }
 
   //Tree Manipulation
   Assign(key, type, data, genLOD) {
