@@ -4,6 +4,10 @@ import Vector from "./Vector2.js"
 import * as Render from "./Render.js";
 export { Region, blockMap }
 //Helper Classes
+
+function xOr(data1, data2) {
+  if ((data1 && !data2) || (!data1 && data2)) { return true } else { return false }
+}
 class box {
   constructor(x, y, width, height) {
     this.position = new Vector(x, y, 0)
@@ -27,13 +31,13 @@ class hitData {
   }
 }
 class keyStuff {
-  constructor(keys, velocity, sign, parent) {
+  constructor(keys, velocity, parent) {
     if (keys == undefined) {keys = []}
     this.key; this.keys = keys;
     this.hitKeys = []; this.hitCount = 0;
     this.keyMap = new Map();
     this.fillMap(parent);
-    this.keyCull(velocity, sign)
+    this.keyCull(velocity)
   }
 
   fillMap(parent) {
@@ -49,12 +53,12 @@ class keyStuff {
     })
   }
 
-  keyCull(velocity, sign) {
-    let keyList = new Set([0, 1, 2, 3]), newVelocity = velocity.multiplyScalar(sign);
-    if (newVelocity.x < 0) { keyList.delete(2); keyList.delete(3); }
-    else if (newVelocity.x > 0) { keyList.delete(0); keyList.delete(1); }
-    if (newVelocity.y < 0) { keyList.delete(1); keyList.delete(3); }
-    else if (newVelocity.y > 0) { keyList.delete(0); keyList.delete(2); }
+  keyCull(velocity) {
+    let keyList = new Set([0, 1, 2, 3]);
+    if (velocity.x < 0) { keyList.delete(2); keyList.delete(3); }
+    else if (velocity.x > 0) { keyList.delete(0); keyList.delete(1); }
+    if (velocity.y < 0) { keyList.delete(1); keyList.delete(3); }
+    else if (velocity.y > 0) { keyList.delete(0); keyList.delete(2); }
     let keyOptions = [];
     keyList.forEach((index) => { keyOptions.push(this.keys[index]) })
     for (let i = 0; i < keyOptions.length; i++) {
@@ -62,7 +66,6 @@ class keyStuff {
       let data = this.keyMap.get(this.key);
       if (data == 0) { return }
     }
-    this.key = keyOptions[0]
   }
 
 }
@@ -172,19 +175,19 @@ class Region extends Quadtree {
   //Corner End
   //Collision/Physics Start
   pointCull(velocity) {
-    let cullSet = new Set([0, 1, 2, 3]);
+    let cullSet = new Set();
     if (velocity.x == 0 && velocity.y != 0) {
-      if (velocity.y < 0) { cullSet.delete(1); cullSet.delete(3) }
-      else { cullSet.delete(0); cullSet.delete(2) }
+      if (velocity.y < 0) { cullSet.add(0); cullSet.add(2) }
+      else if (velocity.y > 0) { cullSet.add(1); cullSet.add(3) }
     }
     else if (velocity.x != 0 && velocity.y == 0) {
-      if (velocity.x < 0) { cullSet.delete(2); cullSet.delete(3) }
-      else { cullSet.delete(0); cullSet.delete(1) }
+      if (velocity.x < 0) { cullSet.add(0); cullSet.add(1) }
+      else if (velocity.x > 0 ) { cullSet.add(2); cullSet.add(3) }
     }
-    else if (velocity.x < 0 && velocity.y < 0) { cullSet.delete(3) }
-    else if (velocity.x < 0 && velocity.y > 0) { cullSet.delete(2) }
-    else if (velocity.x > 0 && velocity.y < 0) { cullSet.delete(1) }
-    else if (velocity.x > 0 && velocity.y > 0) { cullSet.delete(0) }
+    else if (velocity.x < 0 && velocity.y < 0) { cullSet.add(0); cullSet.add(1); cullSet.add(2); }
+    else if (velocity.x < 0 && velocity.y > 0) { cullSet.add(0); cullSet.add(1); cullSet.add(3); }
+    else if (velocity.x > 0 && velocity.y < 0) { cullSet.add(0); cullSet.add(2); cullSet.add(3); }
+    else if (velocity.x > 0 && velocity.y > 0) { cullSet.add(1); cullSet.add(2); cullSet.add(3); }
     return cullSet
   }
 
@@ -213,10 +216,13 @@ class Region extends Quadtree {
     return keys
   }
 
-  stepSquare(start, velocity, key, debugColor) {
+  stepSquare(start, velocity, debugColor) {
     let sign = velocity.sign(), flip = 1;
-    if (key == undefined) { key = 1; flip = -1 }
-    let box = this.getBoxDimensions(key);
+    let keys = this.getKeys(start);
+    let keyData = new keyStuff(keys, velocity, this);
+    if (keyData.key == undefined) { keyData.key = 1; flip = -1 }
+    else { let node = this.getNode(keyData.key); if (node.data != 0) {flip = -1} }
+    let box = this.getBoxDimensions(keyData.key);
     let halfLength = box.length.divideScalar(2);
     let cornerPoint = box.center.add(halfLength.multiply(sign).multiplyScalar(flip))
     let wallDistance = cornerPoint.subtract(start); wallDistance.type = 1
@@ -235,13 +241,11 @@ class Region extends Quadtree {
 
   calcHit(start, velocity, debugColor) {
     let distance = velocity.length(); if (distance == 0) { return }
-    let traveled = 0, point = start, keys = this.getKeys(point), hit = new hitData(), end = false;
-    let culledKeys = new keyStuff(keys, velocity, -1, this) //this.keyCull(keys, velocity, -1);
+    let traveled = 0, point = start, keys = this.getKeys(point), hit, end = false;
     while (traveled < distance && end == false) {
-      hit = this.stepSquare(point, velocity, culledKeys.key, debugColor);
+      hit = this.stepSquare(point, velocity, debugColor);
       keys = this.getKeys(hit.point);
-      culledKeys = new keyStuff(keys, velocity, 1, this) //this.keyCull(keys, velocity, 1);
-      hit.keyData = culledKeys;
+      hit.keyData = new keyStuff(keys, velocity, this)
       if (hit.keyData.key == undefined) { traveled = distance } //Hitting Edge of Region
       else {
         let node = this.getNode(hit.keyData.key);
@@ -250,7 +254,7 @@ class Region extends Quadtree {
         else { traveled += hit.point.subtract(point).length(); point = hit.point; }
       }
     }
-    if (end) { return hit }
+    return hit
   }
 
   //Returns solution velocity
@@ -311,7 +315,7 @@ class Region extends Quadtree {
     let firstHit = this.checkCollision(start, correctedVelocity, target, 'red')
     if (firstHit != undefined) {
       correctedVelocity = firstHit.distance;
-      if ((firstHit.wall.x != 0 && firstHit.wall.y == 0) || (firstHit.wall.x == 0 && firstHit.wall.y != 0)) { // XOR
+      if (velocity.x != 0 && velocity.y != 0) {
         let secondHit = this.checkCollision(start, correctedVelocity, target, 'blue');
         if (secondHit != undefined) {
           if (secondHit.wall.x != 0) { correctedVelocity.x = secondHit.distance.x }
