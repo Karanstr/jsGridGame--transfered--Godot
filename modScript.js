@@ -16,7 +16,7 @@ window.p.blockMap.addBlock(1, '#dd7777', 1);
 window.p.Load('8011')
 window.p.findCorners()
 
-
+//Order rendering should be done in
 let list = [window.a, window.p];
 
 window.current = window.p;
