@@ -87,6 +87,8 @@ onkeyup = (event) => {
 window.speed = 1;
 window.gravity = new Vector(0, 0, 1)
 const game = setInterval(() => {
+  let debugCheck = document.getElementById("debug").checked
+  if (debugCheck == true) {a.debugToggle = 1} else {a.debugToggle = 0}
   Render.drawBox(new Vector(0, 0, 0), new Vector(canData.right, canData.bottom, 1), 'white')
   if (up && down) { }
   else if (up) { current.velocity.add(new Vector(0, -window.speed), true) }

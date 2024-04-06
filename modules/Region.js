@@ -37,7 +37,7 @@ class keyStuff {
     this.hitKeys = []; this.hitCount = 0;
     this.keyMap = new Map();
     this.fillMap(parent);
-    this.keyCull(velocity)
+    this.keyCull(velocity, parent.debugToggle)
   }
 
   fillMap(parent) {
@@ -53,7 +53,7 @@ class keyStuff {
     })
   }
 
-  keyCull(velocity) {
+  keyCull(velocity, toggle) {
     let keyList = new Set([0, 1, 2, 3]);
     if (velocity.x < 0) { keyList.delete(2); keyList.delete(3); }
     else if (velocity.x > 0) { keyList.delete(0); keyList.delete(1); }
@@ -64,7 +64,7 @@ class keyStuff {
     for (let i = 0; i < keyOptions.length; i++) {
       this.key = keyOptions[i];
       let data = this.keyMap.get(this.key);
-      if (data == 0) { return }
+      if (data == toggle) { return }
     }
   }
 
@@ -79,6 +79,7 @@ class Region extends Quadtree {
     this.length = new Vector(width, height, 1);
     this.blockMap = blockMap;
     this.cornerList = [];
+    this.debugToggle = 0;
   }
 
   getBoxDimensions(key) {
