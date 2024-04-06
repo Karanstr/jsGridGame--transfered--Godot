@@ -19,8 +19,10 @@ window.p.findCorners()
 //Order rendering should be done in
 let list = [window.a, window.p];
 
-window.current = window.p;
-current = window.current
+window.currentMove = window.p;
+window.currentEdit = window.a;
+currentEdit = window.currentEdit
+currentMove = window.currentMove
 let curMode = 0;
 
 document.getElementById('tools').addEventListener("change", (event) => {
@@ -33,27 +35,27 @@ onmousedown = (mouse) => {
     mouse.pageX > canData.left &&
     mouse.pageX < canData.right) {
     let mousePos = new Vector(mouse.offsetX, mouse.offsetY)
-    mousePos.subtract(current.position, true)
+    mousePos.subtract(currentEdit.position, true)
     if (mousePos.x > 0 && mousePos.y > 0 &&
-      mousePos.x < current.length.x &&
-      mousePos.y < current.length.y) {
-      let key = Math.max(...current.getKeys(mousePos.add(current.position)));
+      mousePos.x < currentEdit.length.x &&
+      mousePos.y < currentEdit.length.y) {
+      let key = Math.max(...currentEdit.getKeys(mousePos.add(currentEdit.position)));
       let color = Number(document.getElementById('colorField').value);
       switch (curMode) {
         case 0:
-          current.Replace(key, color, true);
+          currentEdit.Replace(key, color, true);
           break;
         case 1:
-          current.Split(key);
+          currentEdit.Split(key);
           break;
         case 2:
-          let node = current.getNode(key);
-          let info = key + ' ' + node.data + ' ' + current.blockMap.getBlock(node.data).color;
+        let node = currentEdit.getNode(key);
+        let info = key + ' ' + node.data + ' ' + currentEdit.blockMap.getBlock(node.data).color;
           document.getElementById('Data').innerHTML = info;
           break;
       }
-      current.Render();
-      current.findCorners();
+      currentEdit.Render();
+      currentEdit.findCorners();
     }
   }
 }
@@ -91,12 +93,12 @@ const game = setInterval(() => {
   if (debugCheck == true) {a.debugToggle = 1} else {a.debugToggle = 0}
   Render.drawBox(new Vector(0, 0, 0), new Vector(canData.right, canData.bottom, 1), 'white')
   if (up && down) { }
-  else if (up) { current.velocity.add(new Vector(0, -window.speed), true) }
-  else if (down) { current.velocity.add(new Vector(0, window.speed), true) }
+  else if (up) { currentMove.velocity.add(new Vector(0, -window.speed), true) }
+  else if (down) { currentMove.velocity.add(new Vector(0, window.speed), true) }
   if (left && right) { }
-  else if (left) { current.velocity.add(new Vector(-window.speed, 0), true) }
-  else if (right) { current.velocity.add(new Vector(window.speed, 0), true) }
-  current.velocity.add(window.gravity, true);
+  else if (left) { currentMove.velocity.add(new Vector(-window.speed, 0), true) }
+  else if (right) { currentMove.velocity.add(new Vector(window.speed, 0), true) }
+    currentMove.velocity.add(window.gravity, true);
 
   list.forEach((object) => {
     object.Render();
