@@ -330,15 +330,11 @@ class Region extends Quadtree {
       if (firstHit.wall.y == 0) {
         searchVel.y = 0;
       }
-      console.log(correctedVelocity)
       let secondHit = this.checkCollision(start, searchVel, target, 'blue');
       if (secondHit != undefined) {
         correctedVelocity.x = secondHit.distance.x;
         correctedVelocity.y = secondHit.distance.y;
       }
-    }
-    if (firstHit != undefined) {
-      //console.log(correctedVelocity)
     }
     // Update Velocity
     velocity.subtract(velocity.subtract(correctedVelocity), true)
