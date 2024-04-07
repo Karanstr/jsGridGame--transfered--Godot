@@ -90,4 +90,4 @@ const game = setInterval(() => {
   a.updatePos(a.velocity);
   a.velocity = new Vector(0, 0, 1)
 
-}, 1000 / 1);
+}, 1000 / 60);
