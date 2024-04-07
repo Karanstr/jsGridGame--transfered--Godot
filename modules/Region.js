@@ -8,6 +8,9 @@ export { Region, blockMap }
 function xOr(data1, data2) {
   if ((data1 && !data2) || (!data1 && data2)) { return true } else { return false }
 }
+function round(number) {
+  return Number(number.toFixed(3))
+}
 class box {
   constructor(x, y, width, height) {
     this.position = new Vector(x, y, 0)
@@ -274,9 +277,13 @@ class Region extends Quadtree {
           let node = target.getNode(hit.keyData.key);
           if (node.data != target.nullVal) { //If not hitting an empty space
             let option = cornerPoint.subtract(hit.point).abs().multiply(hit.wall)
-            let filter = this.solve(target, corner.key, hit.keyData.key);
-            let xUpdate = false, xBool = hit.wall.x != 0 && filter.x != 0 && Math.abs(option.x) <= Math.abs(velFinal.x);
-            let yUpdate = false, yBool = hit.wall.y != 0 && filter.y != 0 && Math.abs(option.y) <= Math.abs(velFinal.y);
+            let thisBox = this.getBoxDimensions(corner.key);
+            let hitBox = target.getBoxDimensions(hit.keyData.key);
+            let boxOffset = thisBox.center.subtract(hitBox.center).abs();
+            Render.outlineBox(hitBox.position, hitBox.length, 'red');
+            Render.outlineBox(thisBox.position, thisBox.length, 'purple')
+            let xUpdate = false, xBool = hit.wall.x != 0 && boxOffset.x >= boxOffset.y && Math.abs(option.x) <= Math.abs(velFinal.x);
+            let yUpdate = false, yBool = hit.wall.y != 0 && boxOffset.x <= boxOffset.y && Math.abs(option.y) <= Math.abs(velFinal.y);
             
               if (xBool) {
                 let sideCheck = target.getSide(hit.keyData.key, hit.wall.x*-1, 0);
@@ -314,15 +321,17 @@ class Region extends Quadtree {
   checkAllCollisions(start, velocity, target) {
     let correctedVelocity = velocity.clone();
     let firstHit = this.checkCollision(start, correctedVelocity, target, 'red')
-    if (firstHit != undefined) {
-      correctedVelocity = firstHit.distance;
-      if (velocity.x != 0 && velocity.y != 0) {
-        let secondHit = this.checkCollision(start, correctedVelocity, target, 'blue');
-        if (secondHit != undefined) {
-          if (secondHit.wall.x != 0) { correctedVelocity.x = secondHit.distance.x }
-          if (secondHit.wall.y != 0) { correctedVelocity.y = secondHit.distance.y }
-        }
+    if (firstHit != undefined) { 
+      correctedVelocity.x = firstHit.distance.x;
+      correctedVelocity.y = firstHit.distance.y;
+      let secondHit = this.checkCollision(start, correctedVelocity, target, 'blue');
+      if (secondHit != undefined) {
+        correctedVelocity.x = secondHit.distance.x;
+        correctedVelocity.y = secondHit.distance.y;
       }
+    }
+    if (firstHit != undefined) {
+      //console.log(correctedVelocity)
     }
     // Update Velocity
     velocity.subtract(velocity.subtract(correctedVelocity), true)
@@ -331,10 +340,7 @@ class Region extends Quadtree {
   //REMEMBER boxOFFSET IS BASED ON start position, NOT hitPosition
   solve(target, cornerKey, hitKey) {
     let solution = new Vector(0, 0, 2)
-    let thisBox = this.getBoxDimensions(cornerKey);
-    let hitBox = target.getBoxDimensions(hitKey);
-    let boxOffset = thisBox.center.subtract(hitBox.center).abs();
-    Render.outlineBox(hitBox.position, hitBox.length, 'red');
+    
     //If allowed to hit vertical wall
     if (boxOffset.x >= boxOffset.y) {
       solution.x = 1;
