@@ -284,13 +284,12 @@ class Region extends Quadtree {
             Render.outlineBox(thisBox.position, thisBox.length, 'purple')
             let xUpdate = false, xBool = hit.wall.x != 0 && boxOffset.x >= boxOffset.y && Math.abs(option.x) <= Math.abs(velFinal.x);
             let yUpdate = false, yBool = hit.wall.y != 0 && boxOffset.x <= boxOffset.y && Math.abs(option.y) <= Math.abs(velFinal.y);
-            
               if (xBool) {
                 let sideCheck = target.getSide(hit.keyData.key, hit.wall.x*-1, 0);
                 if (sideCheck != undefined) {
                   let node, boxData;
-                  if (hit.wall.x == -1) { node = target.getNode(sideCheck[0])}
-                  else if (hit.wall.x == 1) { node = target.getNode(sideCheck[sideCheck.length - 1]) }
+                  if (hit.wall.x == 1) { node = target.getNode(sideCheck[0])}
+                  else if (hit.wall.x == -1) { node = target.getNode(sideCheck[sideCheck.length - 1]) }
                   let colType = target.blockMap.getBlock(node.data).collisionType;
                   if (colType == 0) { xUpdate = true}
                 } else { xUpdate = true }
@@ -299,8 +298,8 @@ class Region extends Quadtree {
                 let sideCheck = target.getSide(hit.keyData.key, 0, hit.wall.y*-1);
                 if (sideCheck != undefined) {
                   let node;
-                  if (hit.wall.y == -1) { node = target.getNode(sideCheck[0]) }
-                  else if (hit.wall.y == 1) { node = target.getNode(sideCheck[sideCheck.length - 1]) }
+                  if (hit.wall.y == 1) { node = target.getNode(sideCheck[0]) }
+                  else if (hit.wall.y == -1) { node = target.getNode(sideCheck[sideCheck.length - 1]) }
                   let colType = target.blockMap.getBlock(node.data).collisionType;
                   if (colType == 0) { yUpdate = true}
                 } else { yUpdate = true }
@@ -324,16 +323,20 @@ class Region extends Quadtree {
     if (firstHit != undefined) {
       correctedVelocity = firstHit.distance;
       let searchVel = correctedVelocity.clone();
-      if (firstHit.wall.x == 0) {
+      if (firstHit.wall.x != 0) {
         searchVel.x = 0;
       }
-      if (firstHit.wall.y == 0) {
+      if (firstHit.wall.y != 0) {
         searchVel.y = 0;
       }
       let secondHit = this.checkCollision(start, searchVel, target, 'blue');
       if (secondHit != undefined) {
-        correctedVelocity.x = secondHit.distance.x;
-        correctedVelocity.y = secondHit.distance.y;
+        if (secondHit.wall.x != 0) {
+          correctedVelocity.x = secondHit.distance.x;
+        }
+        if (secondHit.wall.y != 0) {
+          correctedVelocity.y = secondHit.distance.y;
+        }
       }
     }
     // Update Velocity
