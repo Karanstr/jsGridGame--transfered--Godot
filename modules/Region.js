@@ -4,13 +4,6 @@ import Vector from "./Vector2.js"
 import * as Render from "./Render.js";
 export { Region, blockMap }
 //Helper Classes
-
-function xOr(data1, data2) {
-  if ((data1 && !data2) || (!data1 && data2)) { return true } else { return false }
-}
-function round(number) {
-  return Number(number.toFixed(3))
-}
 class box {
   constructor(x, y, width, height) {
     this.position = new Vector(x, y, 0)
@@ -33,33 +26,7 @@ class hitData {
     this.distance;
   }
 }
-/*
-class keyStuff {
-  constructor(keys, velocity, parent) {
-    if (keys == undefined) {keys = []}
-    this.key; this.keys = keys;
-    this.keyCull(parent, velocity, parent.debugToggle)
-  }
 
-  keyCull(parent, velocity, toggle) {
-    let keyList = new Set([0, 1, 2, 3]);
-    if (velocity.x < 0) { keyList.delete(2); keyList.delete(3); }
-    else if (velocity.x > 0) { keyList.delete(0); keyList.delete(1); }
-    if (velocity.y < 0) { keyList.delete(1); keyList.delete(3); }
-    else if (velocity.y > 0) { keyList.delete(0); keyList.delete(2); }
-    let keyOptions = [];
-    keyList.forEach((index) => { keyOptions.push(this.keys[index]) })
-    for (let i = 0; i < keyOptions.length; i++) {
-      this.key = keyOptions[i];
-      if (this.key != undefined) {
-        let data = parent.blockMap.getBlock(parent.getNode(this.key).data).collisionType;
-        if (data == toggle) { return }
-      }
-    }
-  }
-
-}
-*/
 //Important Bit
 class Region extends Quadtree {
   constructor(x, y, width, height, blockMap) {
@@ -234,13 +201,14 @@ class Region extends Quadtree {
     return keys
   }
 
-  stepSquare(start, velocity, key, debugColor) {
-    let sign = velocity.sign(); if (key == undefined) { key = 1 }
+  stepSquare(startPoint, velocity, key) {
+    let sign = velocity.sign(), flip = 1; if (key == undefined) { key = 1; flip = -1; }
+    else {let node = this.getNode(key); if (this.blockMap.getBlock(node.data).collisionType != 0) {flip = -1} }
     let box = this.getBoxDimensions(key);
     let halfLength = box.length.divideScalar(2);
-    let cornerPoint = box.center.add(halfLength.multiply(sign).multiplyScalar(-1))
-    let wallDistance = cornerPoint.subtract(start); wallDistance.type = 1
-    let hitPoint = start.clone(); let hitWall = sign;
+    let cornerPoint = box.center.add(halfLength.multiply(sign).multiplyScalar(flip))
+    let wallDistance = cornerPoint.subtract(startPoint); wallDistance.type = 1
+    let hitPoint = startPoint.clone(); let hitWall = sign;
     let slope = velocity.slope(); let slopeToCorner = wallDistance.slope();
     if (Math.abs(slopeToCorner) == Math.abs(slope)) { hitPoint.add(wallDistance, true) }
     else if (Math.abs(slopeToCorner) > Math.abs(slope)) {
@@ -249,16 +217,17 @@ class Region extends Quadtree {
     else if (Math.abs(slopeToCorner) < Math.abs(slope)) {
       hitPoint.add(new Vector(1 / slope * wallDistance.y, wallDistance.y, 0), true); hitWall.x = 0;
     }
-    Render.drawPoint(hitPoint, debugColor); Render.drawLine(start, wallDistance, 'orange');
+    Render.drawPoint(hitPoint, 'red'); Render.drawLine(startPoint, wallDistance, 'orange');
     return new hitData(hitPoint, hitWall)
   }
 
-  calcHit(cornerPos, direction, velocity, debugColor) {
+  calcHit(cornerPos, direction, velocity) {
     let distance = velocity.length(); if (distance == 0) { return }
-    let traveled = 0, point = cornerPos, keys = this.getKeys(point), key = this.keyCull(keys, direction, velocity);
-    let hit = new hitData(), end = false; hit.key = key;
+    let traveled = 0, point = cornerPos, hit = new hitData(), end = false;
+    let keys = this.getKeys(point);
+    hit.key = this.keyCull(keys, direction, velocity);
     while (traveled < distance && end == false) {
-      hit = this.stepSquare(point, velocity, hit.key, debugColor);
+      hit = this.stepSquare(point, velocity, hit.key);
       keys = this.getKeys(hit.point);
       hit.key = this.keyCull(keys, direction, velocity)
       if (hit.key == undefined) { traveled = distance } //Hitting Edge of Region
@@ -267,9 +236,7 @@ class Region extends Quadtree {
         let collisionType = this.blockMap.getBlock(node.data).collisionType;
         if (collisionType != 0) { end = true } //Hitting Wall
         else {
-          let dif = hit.point.subtract(point).length(); 
-          if (dif == 0) { end = true } //Stupid Infinite Loop Protection Until I figure out why it's infinte looping
-          traveled += dif;
+          traveled += hit.point.subtract(point).length();
           point = hit.point; 
         }
       }
@@ -277,119 +244,84 @@ class Region extends Quadtree {
     return hit
   }
 
+  //Collision Safety Checks
+  slideCheck(key, x, y) {
+    let update = false;
+    let sideCheck = this.getSide(key, x*-1, y*-1);
+    if (sideCheck != undefined) {
+      let node;
+      if (x == 1 || y == 1) { node = this.getNode(sideCheck[0])}
+      else if (x == -1 || y == -1) { node = this.getNode(sideCheck[sideCheck.length - 1]) }
+      let colType = this.blockMap.getBlock(node.data).collisionType;
+      if (colType == 0) { update = true}
+    } else { update = true }
+    return update
+  }
+
+  peekCheck(cornerKey, cornerRegion, hitKey, hitRegion) {
+    let truth = new Vector(false, false, 3);
+    let cornerBox = cornerRegion.getBoxDimensions(cornerKey);
+    let hitBox = hitRegion.getBoxDimensions(hitKey);
+    let boxOffset = cornerBox.center.subtract(hitBox.center).abs();
+    Render.outlineBox(hitBox.position, hitBox.length, 'red');
+    Render.outlineBox(cornerBox.position, cornerBox.length, 'purple')
+    if (boxOffset.x >= boxOffset.y) { truth.assign(true) }
+    if (boxOffset.x <= boxOffset.y) { truth.assign(null, true) }
+    return truth
+  }
+
   //Returns solution velocity
-  checkCollision(start, velocity, target, debugColor) {
-    let velFinal = velocity.clone();
-    let breakout = false;
-    let cullSet = this.pointCull(velFinal);
-    let culledCorners = []; //List of all valid corners.
+  checkCollision(start, velocity, target) {
+    let finalHit, breakout = false;
+    let currentVelocity = velocity.clone();
+    let cullSet = this.pointCull(velocity), culledCorners = [];
     this.cornerList.forEach((corner) => { if (cullSet.has(corner.direction)) { culledCorners.push(corner) } })
+
     for (let i = 0; i < culledCorners.length; i++) {
       let corner = culledCorners[i];
       let cornerPoint = corner.point.add(start)
-      let hit = target.calcHit(cornerPoint, corner.direction, velFinal, debugColor);
-      if (hit != undefined) {
-        if (hit.key != undefined) {
-          let node = target.getNode(hit.key);
-          if (node.data != target.nullVal) { //If not hitting an empty space
-            let thisBox = this.getBoxDimensions(corner.key);
-            let hitBox = target.getBoxDimensions(hit.key);
-            let boxOffset = thisBox.center.subtract(hitBox.center).abs();
-            let option = cornerPoint.subtract(hit.point).abs().multiply(hit.wall)
-            Render.outlineBox(hitBox.position, hitBox.length, 'red');
-            Render.outlineBox(thisBox.position, thisBox.length, 'purple')
-            let xUpdate = false, xBool = hit.wall.x != 0 && boxOffset.x >= boxOffset.y && Math.abs(option.x) <= Math.abs(velFinal.x);
-            let yUpdate = false, yBool = hit.wall.y != 0 && boxOffset.x <= boxOffset.y && Math.abs(option.y) <= Math.abs(velFinal.y);
-            
-              if (xBool) {
-                let sideCheck = target.getSide(hit.key, hit.wall.x*-1, 0);
-                if (sideCheck != undefined) {
-                  let node, boxData;
-                  if (hit.wall.x == 1) { node = target.getNode(sideCheck[0])}
-                  else if (hit.wall.x == -1) { node = target.getNode(sideCheck[sideCheck.length - 1]) }
-                  let colType = target.blockMap.getBlock(node.data).collisionType;
-                  if (colType == 0) { xUpdate = true}
-                } else { xUpdate = true }
-              }
-              if (yBool) {
-                let sideCheck = target.getSide(hit.key, 0, hit.wall.y*-1);
-                if (sideCheck != undefined) {
-                  let node;
-                  if (hit.wall.y == 1) { node = target.getNode(sideCheck[0]) }
-                  else if (hit.wall.y == -1) { node = target.getNode(sideCheck[sideCheck.length - 1]) }
-                  let colType = target.blockMap.getBlock(node.data).collisionType;
-                  if (colType == 0) { yUpdate = true}
-                } else { yUpdate = true }
-              }
+      let hit = target.calcHit(cornerPoint, corner.direction, currentVelocity);
 
-            if (xUpdate) { velFinal.x = option.x; breakout = true }
-            if (yUpdate) { velFinal.y = option.y; breakout = true }
-            if (breakout) {
-              hit.distance = velFinal;
-              return hit
-            }
+      if (hit != undefined && hit.key != undefined) {
+        let node = target.getNode(hit.key);
+        if (node.data != target.nullVal) { //If not hitting an empty space
+          let update = false;
+          let peekCheck = this.peekCheck(corner.key, this, hit.key, target)
+          let option = hit.point.subtract(cornerPoint)
+
+          //If (Wall is hit and not peeking) {Check if wall passes the slide test}
+          if (hit.wall.x != 0 && peekCheck.x) { update = target.slideCheck(hit.key, hit.wall.x, 0) }
+          if (hit.wall.y != 0 && peekCheck.y) { update = target.slideCheck(hit.key, 0, hit.wall.y) }
+          //If collision is valid, check if it's shorter than current best alternative
+          if (update && option.length() < currentVelocity.length()) {
+            finalHit = hit;
+            finalHit.distance = option;
+            if (option.length() == 0) { return finalHit }
           }
         }
       }
     }
+    return finalHit
   }
-
-  checkAllCollisions(start, velocity, target) {
-    let correctedVelocity = velocity.clone(), searchVel = velocity.clone();
-    let firstHit = this.checkCollision(start, correctedVelocity, target, 'red')
-    if (firstHit != undefined) {
-      correctedVelocity = firstHit.distance;
-      searchVel = correctedVelocity.clone();
-      if (firstHit.wall.x != 0) {
-        searchVel.x = 0;
+  
+  moveWithCollisions(target) {
+    let foundWalls = new Vector(false, false, 3);
+    let out = false;
+    while ((!foundWalls.x || !foundWalls.y) && !out) {
+      let hit = this.checkCollision(this.position, this.velocity, target);
+      if (hit == undefined) {
+        this.position.add(this.velocity, true);
+        out = true;
+      } 
+      else {
+        this.position.add(hit.distance, true);
+        this.velocity.subtract(hit.distance, true);
+        if (hit.wall.x != 0) { foundWalls.x = true; this.velocity.x = 0}
+        if (hit.wall.y != 0) { foundWalls.y = true; this.velocity.y = 0} 
       }
-      if (firstHit.wall.y != 0) {
-        searchVel.y = 0;
-      }
-      let secondHit = this.checkCollision(start, searchVel, target, 'blue');
-      if (secondHit != undefined) {
-        if (secondHit.wall.x != 0) {
-          correctedVelocity.x = secondHit.distance.x;
-        }
-        if (secondHit.wall.y != 0) {
-          correctedVelocity.y = secondHit.distance.y;
-        }
-        let searchVel = correctedVelocity.clone();
-      }
-    }/*
-    let dumbStart = start.add(this.length.divideScalar(2)).add(this.length.divideScalar(2).multiply(searchVel.sign()))
-    let thirdHit = target.calcHit(dumbStart, searchVel, 'green')
-    if (thirdHit != undefined) {
-      thirdHit.distance = dumbStart.subtract(thirdHit.point).abs().multiply(thirdHit.wall)
-      let xBool = thirdHit.wall.x != 0 && Math.abs(thirdHit.distance.x) <= Math.abs(correctedVelocity.x);
-      let yBool = thirdHit.wall.y != 0 && Math.abs(thirdHit.distance.y) <= Math.abs(correctedVelocity.y);
-      if (xBool) {correctedVelocity.x = thirdHit.distance.x }
-      if (yBool) {correctedVelocity.y = thirdHit.distance.y }
-    }*/
-    // Update Velocity
-    velocity.subtract(velocity.subtract(correctedVelocity), true)
-  }
-
-  //REMEMBER boxOFFSET IS BASED ON start position, NOT hitPosition
-  solve(target, cornerKey, hitKey) {
-    let solution = new Vector(0, 0, 2)
-    
-    //If allowed to hit vertical wall
-    if (boxOffset.x >= boxOffset.y) {
-      solution.x = 1;
     }
-    //If allowed to hit horizontal wall
-    if (boxOffset.x <= boxOffset.y) {
-      solution.y = 1;
-    }
-    return solution
-  }
-
-  updatePos(force) {
-    this.position.add(force, true)
   }
   //Collision/Physics End
-
 }
 
 class Block {
