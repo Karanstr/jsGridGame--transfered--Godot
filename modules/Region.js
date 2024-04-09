@@ -285,15 +285,18 @@ class Region extends Quadtree {
       if (hit != undefined && hit.key != undefined) {
         let node = target.getNode(hit.key);
         if (node.data != target.nullVal) { //If not hitting an empty space
-          let update = false;
+          let updateX = false, updateY = false;
           let peekCheck = this.peekCheck(corner.key, this, hit.key, target)
           let option = hit.point.subtract(cornerPoint)
 
           //If (Wall is hit and not peeking) {Check if wall passes the slide test}
-          if (hit.wall.x != 0 && peekCheck.x) { update = target.slideCheck(hit.key, hit.wall.x, 0) }
-          if (hit.wall.y != 0 && peekCheck.y) { update = target.slideCheck(hit.key, 0, hit.wall.y) }
+          if (hit.wall.x != 0 && peekCheck.x) { updateX = target.slideCheck(hit.key, hit.wall.x, 0) }
+          if (hit.wall.y != 0 && peekCheck.y) { updateY = target.slideCheck(hit.key, 0, hit.wall.y) }
+
+          if (!updateX) { hit.wall.x = 0 }
+          if (!updateY) { hit.wall.y = 0 }
           //If collision is valid, check if it's shorter than current best alternative
-          if (update && option.length() < currentVelocity.length()) {
+          if ((updateX || updateY) && option.length() < currentVelocity.length()) {
             finalHit = hit;
             finalHit.distance = option;
             if (option.length() == 0) { return finalHit }
