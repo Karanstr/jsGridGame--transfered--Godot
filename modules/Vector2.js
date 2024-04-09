@@ -3,6 +3,8 @@ export { Vector2 as default }
 //Position(Absolute) Vectors are type 0;
 //Direction(Relative) Vectors are type 1;
 //Scaling Vectors are type 2
+//Boolean Vectors are type 3
+
 class Vector2 {
   constructor(x, y, type) {
     this.x = x;
