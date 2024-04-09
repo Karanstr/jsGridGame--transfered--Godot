@@ -26,37 +26,22 @@ class corner {
   }
 }
 class hitData {
-  constructor(point, wall) {
+  constructor(point, wall, key) {
     this.point = point;
     this.wall = wall; // Rename to direction?
-    this.keyData;
+    this.key = key;
     this.distance;
   }
 }
+/*
 class keyStuff {
   constructor(keys, velocity, parent) {
     if (keys == undefined) {keys = []}
     this.key; this.keys = keys;
-    this.hitKeys = []; this.hitCount = 0;
-    this.keyMap = new Map();
-    this.fillMap(parent);
-    this.keyCull(velocity, parent.debugToggle)
+    this.keyCull(parent, velocity, parent.debugToggle)
   }
 
-  fillMap(parent) {
-    this.keys.forEach((key) => {
-      if (!this.keyMap.has(key)) {
-        if (key == undefined) { this.keyMap.set(undefined, 0) }
-        else {
-          let colType = parent.blockMap.getBlock(parent.getNode(key).data).collisionType;
-          this.keyMap.set(key, colType);
-          if (colType != 0) { this.hitCount += 1; this.hitKeys.push(key)}
-        }
-      }
-    })
-  }
-
-  keyCull(velocity, toggle) {
+  keyCull(parent, velocity, toggle) {
     let keyList = new Set([0, 1, 2, 3]);
     if (velocity.x < 0) { keyList.delete(2); keyList.delete(3); }
     else if (velocity.x > 0) { keyList.delete(0); keyList.delete(1); }
@@ -66,13 +51,15 @@ class keyStuff {
     keyList.forEach((index) => { keyOptions.push(this.keys[index]) })
     for (let i = 0; i < keyOptions.length; i++) {
       this.key = keyOptions[i];
-      let data = this.keyMap.get(this.key);
-      if (data == toggle) { return }
+      if (this.key != undefined) {
+        let data = parent.blockMap.getBlock(parent.getNode(this.key).data).collisionType;
+        if (data == toggle) { return }
+      }
     }
   }
 
 }
-
+*/
 //Important Bit
 class Region extends Quadtree {
   constructor(x, y, width, height, blockMap) {
@@ -195,16 +182,43 @@ class Region extends Quadtree {
     return cullSet
   }
 
-  getKeys(vector) {
-    let originVector = vector.subtract(this.position)
+  keyCull(keys, direction, velocity) {
+    let velDirection = velocity.sign();
+    if (keys == undefined) {keys = []}
+    let keyList = new Set([0, 1, 2, 3]), key;
+    if (velocity.x < 0) { keyList.delete(2); keyList.delete(3); }
+    else if (velocity.x > 0) { keyList.delete(0); keyList.delete(1); }
+    if (velocity.y < 0) { keyList.delete(1); keyList.delete(3); }
+    else if (velocity.y > 0) { keyList.delete(0); keyList.delete(2); }
+    let keyOptions = [];
+    keyList.forEach((index) => { keyOptions.push(keys[index]) })
+    if (keyOptions.length == 2) {
+      if (velDirection.x != 0) {
+        //Chose between Y keys
+        if (direction == 0 || direction == 2) { key = keyOptions[1] }
+        if (direction == 1 || direction == 3) { key = keyOptions[0] }
+      }
+      else if (velDirection.y != 0) {
+        //Choose between X keys
+        if (direction == 0 || direction == 1) { key = keyOptions[1] }
+        if (direction == 2 || direction == 3) { key = keyOptions[0] }
+      }
+    }
+    else { key = keyOptions[0] }
+    //console.log(key)
+    return key
+  }
+
+  getKeys(point) {
+    let originPoint = point.subtract(this.position)
     let keys = []; let badcount = 0; let offset = .001;
     for (let i = 0; i < 2; i++) {
       for (let j = 0; j < 2; j++) {
         for (let layer = 0; layer < this.depth; layer++) {
-          let scaledX = Math.floor(originVector.x / ((this.length.x + offset - i * offset) / 2 ** layer));
-          let scaledY = Math.floor(originVector.y / ((this.length.y + offset - j * offset) / 2 ** layer));
-          if (originVector.x == 0 && i == 0) { scaledX = -1 }
-          if (originVector.y == 0 && j == 0) { scaledY = -1 }
+          let scaledX = Math.floor(originPoint.x / ((this.length.x + offset - i * offset) / 2 ** layer));
+          let scaledY = Math.floor(originPoint.y / ((this.length.y + offset - j * offset) / 2 ** layer));
+          if (originPoint.x == 0 && i == 0) { scaledX = -1 }
+          if (originPoint.y == 0 && j == 0) { scaledY = -1 }
           try {
             let key = this.Encode(scaledX, scaledY, layer);
             let node = this.getNode(key);
@@ -220,15 +234,11 @@ class Region extends Quadtree {
     return keys
   }
 
-  stepSquare(start, velocity, debugColor) {
-    let sign = velocity.sign(), flip = 1;
-    let keys = this.getKeys(start);
-    let keyData = new keyStuff(keys, velocity, this);
-    if (keyData.key == undefined) { keyData.key = 1; flip = -1 }
-    else { let node = this.getNode(keyData.key); if (node.data != 0) {flip = -1} }
-    let box = this.getBoxDimensions(keyData.key);
+  stepSquare(start, velocity, key, debugColor) {
+    let sign = velocity.sign(); if (key == undefined) { key = 1 }
+    let box = this.getBoxDimensions(key);
     let halfLength = box.length.divideScalar(2);
-    let cornerPoint = box.center.add(halfLength.multiply(sign).multiplyScalar(flip))
+    let cornerPoint = box.center.add(halfLength.multiply(sign).multiplyScalar(-1))
     let wallDistance = cornerPoint.subtract(start); wallDistance.type = 1
     let hitPoint = start.clone(); let hitWall = sign;
     let slope = velocity.slope(); let slopeToCorner = wallDistance.slope();
@@ -243,19 +253,25 @@ class Region extends Quadtree {
     return new hitData(hitPoint, hitWall)
   }
 
-  calcHit(start, velocity, debugColor) {
+  calcHit(cornerPos, direction, velocity, debugColor) {
     let distance = velocity.length(); if (distance == 0) { return }
-    let traveled = 0, point = start, keys = this.getKeys(point), hit, end = false;
+    let traveled = 0, point = cornerPos, keys = this.getKeys(point), key = this.keyCull(keys, direction, velocity);
+    let hit = new hitData(), end = false; hit.key = key;
     while (traveled < distance && end == false) {
-      hit = this.stepSquare(point, velocity, debugColor);
+      hit = this.stepSquare(point, velocity, hit.key, debugColor);
       keys = this.getKeys(hit.point);
-      hit.keyData = new keyStuff(keys, velocity, this)
-      if (hit.keyData.key == undefined) { traveled = distance } //Hitting Edge of Region
+      hit.key = this.keyCull(keys, direction, velocity)
+      if (hit.key == undefined) { traveled = distance } //Hitting Edge of Region
       else {
-        let node = this.getNode(hit.keyData.key);
+        let node = this.getNode(hit.key);
         let collisionType = this.blockMap.getBlock(node.data).collisionType;
         if (collisionType != 0) { end = true } //Hitting Wall
-        else { traveled += hit.point.subtract(point).length(); point = hit.point; }
+        else {
+          let dif = hit.point.subtract(point).length(); 
+          if (dif == 0) { end = true } //Stupid Infinite Loop Protection Until I figure out why it's infinte looping
+          traveled += dif;
+          point = hit.point; 
+        }
       }
     }
     return hit
@@ -271,21 +287,22 @@ class Region extends Quadtree {
     for (let i = 0; i < culledCorners.length; i++) {
       let corner = culledCorners[i];
       let cornerPoint = corner.point.add(start)
-      let hit = target.calcHit(cornerPoint, velFinal, debugColor);
+      let hit = target.calcHit(cornerPoint, corner.direction, velFinal, debugColor);
       if (hit != undefined) {
-        if (hit.keyData.key != undefined) {
-          let node = target.getNode(hit.keyData.key);
+        if (hit.key != undefined) {
+          let node = target.getNode(hit.key);
           if (node.data != target.nullVal) { //If not hitting an empty space
-            let option = cornerPoint.subtract(hit.point).abs().multiply(hit.wall)
             let thisBox = this.getBoxDimensions(corner.key);
-            let hitBox = target.getBoxDimensions(hit.keyData.key);
+            let hitBox = target.getBoxDimensions(hit.key);
             let boxOffset = thisBox.center.subtract(hitBox.center).abs();
+            let option = cornerPoint.subtract(hit.point).abs().multiply(hit.wall)
             Render.outlineBox(hitBox.position, hitBox.length, 'red');
             Render.outlineBox(thisBox.position, thisBox.length, 'purple')
             let xUpdate = false, xBool = hit.wall.x != 0 && boxOffset.x >= boxOffset.y && Math.abs(option.x) <= Math.abs(velFinal.x);
             let yUpdate = false, yBool = hit.wall.y != 0 && boxOffset.x <= boxOffset.y && Math.abs(option.y) <= Math.abs(velFinal.y);
+            
               if (xBool) {
-                let sideCheck = target.getSide(hit.keyData.key, hit.wall.x*-1, 0);
+                let sideCheck = target.getSide(hit.key, hit.wall.x*-1, 0);
                 if (sideCheck != undefined) {
                   let node, boxData;
                   if (hit.wall.x == 1) { node = target.getNode(sideCheck[0])}
@@ -295,7 +312,7 @@ class Region extends Quadtree {
                 } else { xUpdate = true }
               }
               if (yBool) {
-                let sideCheck = target.getSide(hit.keyData.key, 0, hit.wall.y*-1);
+                let sideCheck = target.getSide(hit.key, 0, hit.wall.y*-1);
                 if (sideCheck != undefined) {
                   let node;
                   if (hit.wall.y == 1) { node = target.getNode(sideCheck[0]) }
@@ -318,11 +335,11 @@ class Region extends Quadtree {
   }
 
   checkAllCollisions(start, velocity, target) {
-    let correctedVelocity = velocity.clone();
+    let correctedVelocity = velocity.clone(), searchVel = velocity.clone();
     let firstHit = this.checkCollision(start, correctedVelocity, target, 'red')
     if (firstHit != undefined) {
       correctedVelocity = firstHit.distance;
-      let searchVel = correctedVelocity.clone();
+      searchVel = correctedVelocity.clone();
       if (firstHit.wall.x != 0) {
         searchVel.x = 0;
       }
@@ -337,8 +354,18 @@ class Region extends Quadtree {
         if (secondHit.wall.y != 0) {
           correctedVelocity.y = secondHit.distance.y;
         }
+        let searchVel = correctedVelocity.clone();
       }
-    }
+    }/*
+    let dumbStart = start.add(this.length.divideScalar(2)).add(this.length.divideScalar(2).multiply(searchVel.sign()))
+    let thirdHit = target.calcHit(dumbStart, searchVel, 'green')
+    if (thirdHit != undefined) {
+      thirdHit.distance = dumbStart.subtract(thirdHit.point).abs().multiply(thirdHit.wall)
+      let xBool = thirdHit.wall.x != 0 && Math.abs(thirdHit.distance.x) <= Math.abs(correctedVelocity.x);
+      let yBool = thirdHit.wall.y != 0 && Math.abs(thirdHit.distance.y) <= Math.abs(correctedVelocity.y);
+      if (xBool) {correctedVelocity.x = thirdHit.distance.x }
+      if (yBool) {correctedVelocity.y = thirdHit.distance.y }
+    }*/
     // Update Velocity
     velocity.subtract(velocity.subtract(correctedVelocity), true)
   }
