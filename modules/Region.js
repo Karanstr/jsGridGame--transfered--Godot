@@ -263,7 +263,7 @@ class Region extends Quadtree {
     return update
   }
 
-  peekCheck(cornerKey, cornerRegion, hitKey, hitRegion) {
+  peekCheck(cornerKey, cornerRegion, hitKey, hitRegion, velocity) {
     let truth = new Vector(false, false, 3);
     let cornerBox = cornerRegion.getBoxDimensions(cornerKey);
     let hitBox = hitRegion.getBoxDimensions(hitKey);
@@ -272,6 +272,10 @@ class Region extends Quadtree {
     Render.outlineBox(cornerBox.position, cornerBox.length, 'purple')
     if (boxOffset.x >= boxOffset.y) { truth.assign(true) }
     if (boxOffset.x <= boxOffset.y) { truth.assign(null, true) }
+    if (truth.x == true && truth.y == true) {
+      if (Math.abs(velocity.x) > Math.abs(velocity.y)) { truth.x = false }
+      else if (Math.abs(velocity.x) < Math.abs(velocity.y)) { truth.y = false }
+    }
     return truth
   }
 
@@ -291,7 +295,7 @@ class Region extends Quadtree {
         let node = target.getNode(hit.key);
         if (node.data != target.nullVal) { //If not hitting an empty space
           let updateX = false, updateY = false;
-          let peekCheck = this.peekCheck(corner.key, this, hit.key, target)
+          let peekCheck = this.peekCheck(corner.key, this, hit.key, target, currentVelocity)
           let option = hit.point.subtract(cornerPoint)
 
           //If (Wall is hit and not peeking) {Check if wall passes the slide test}
