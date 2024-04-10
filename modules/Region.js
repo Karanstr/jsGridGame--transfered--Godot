@@ -1,8 +1,10 @@
 
 import Quadtree from "./Quadtree.js";
 import Vector from "./Vector2.js"
+//import PhysObject from "./Physics.js";
 import * as Render from "./Render.js";
 export { Region, blockMap }
+
 //Helper Classes
 class box {
   constructor(x, y, width, height) {
@@ -37,6 +39,7 @@ class Region extends Quadtree {
     this.blockMap = blockMap;
     this.cornerList = [];
     this.debugToggle = 0;
+    //this.physics = new PhysObject();
   }
 
   getBoxDimensions(key) {
@@ -132,6 +135,31 @@ class Region extends Quadtree {
   }
   //Corner End
   //Collision/Physics Start
+  getKeys(point) {
+    let originPoint = point.subtract(this.position)
+    let keys = []; let badcount = 0; let offset = .001;
+    for (let i = 0; i < 2; i++) {
+      for (let j = 0; j < 2; j++) {
+        for (let layer = 0; layer < this.depth; layer++) {
+          let scaledX = Math.floor(originPoint.x / ((this.length.x + offset - i * offset) / 2 ** layer));
+          let scaledY = Math.floor(originPoint.y / ((this.length.y + offset - j * offset) / 2 ** layer));
+          if (originPoint.x == 0 && i == 0) { scaledX = -1 }
+          if (originPoint.y == 0 && j == 0) { scaledY = -1 }
+          try {
+            let key = this.Encode(scaledX, scaledY, layer);
+            let node = this.getNode(key);
+            if (node.type == 0) {
+              keys.push(key)
+              break
+            }
+          } catch (error) { keys.push(undefined); badcount += 1; break }
+        }
+      }
+    }
+    if (badcount == 4) { return undefined }
+    return keys
+  }
+  
   pointCull(velocity) {
     let cullSet = new Set();
     if (velocity.x == 0 && velocity.y != 0) {
@@ -176,30 +204,7 @@ class Region extends Quadtree {
     return key
   }
 
-  getKeys(point) {
-    let originPoint = point.subtract(this.position)
-    let keys = []; let badcount = 0; let offset = .001;
-    for (let i = 0; i < 2; i++) {
-      for (let j = 0; j < 2; j++) {
-        for (let layer = 0; layer < this.depth; layer++) {
-          let scaledX = Math.floor(originPoint.x / ((this.length.x + offset - i * offset) / 2 ** layer));
-          let scaledY = Math.floor(originPoint.y / ((this.length.y + offset - j * offset) / 2 ** layer));
-          if (originPoint.x == 0 && i == 0) { scaledX = -1 }
-          if (originPoint.y == 0 && j == 0) { scaledY = -1 }
-          try {
-            let key = this.Encode(scaledX, scaledY, layer);
-            let node = this.getNode(key);
-            if (node.type == 0) {
-              keys.push(key)
-              break
-            }
-          } catch (error) { keys.push(undefined); badcount += 1; break }
-        }
-      }
-    }
-    if (badcount == 4) { return undefined }
-    return keys
-  }
+  
 
   stepSquare(startPoint, velocity, key) {
     let sign = velocity.sign(), flip = 1; if (key == undefined) { key = 1; flip = -1; }
@@ -308,13 +313,12 @@ class Region extends Quadtree {
   }
   
   moveWithCollisions(target) {
-    let foundWalls = new Vector(false, false, 3);
-    let out = false;
-    while ((!foundWalls.x || !foundWalls.y) && !out) {
+    let foundWalls = new Vector(false, false, 3), done = false;
+    while ((!foundWalls.x || !foundWalls.y) && !done) {
       let hit = this.checkCollision(this.position, this.velocity, target);
       if (hit == undefined) {
         this.position.add(this.velocity, true);
-        out = true;
+        done = true;
       } 
       else {
         this.position.add(hit.distance, true);
@@ -324,6 +328,7 @@ class Region extends Quadtree {
       }
     }
   }
+
   //Collision/Physics End
 }
 

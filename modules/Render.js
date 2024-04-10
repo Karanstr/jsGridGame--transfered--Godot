@@ -1,4 +1,4 @@
-"use strict";
+
 export { drawPoint, drawBox, outlineBox, drawLine }
 
 const canvas = document.getElementById("canvas");

@@ -1,3 +1,4 @@
+
 export { Vector2 as default }
 
 //Position(Absolute) Vectors are type 0;

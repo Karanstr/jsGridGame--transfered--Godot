@@ -1,4 +1,4 @@
-"use strict";
+
 export { Quadtree as default }
 
 class Node {
