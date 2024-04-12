@@ -9,20 +9,20 @@ window.Vector = Vector;
 window.a = new Region(125, 125, 160, 160, new blockMap('#ffffff'));
 window.a.blockMap.addBlock(1, '#777777', 1);
 window.a.Load('8401 8411 8421 8441 8451 8481 84a1 8501 8511 8541 8571 85d1 85f1 8601 8621 8661 8671 86e1 86f1 8721 8731 8751 8761 8771 87a1 87b1 81f1');
-window.a.findCorners()
+window.a.findCorners();
 
 window.p = new Region(145, 185, 20, 20, new blockMap('#ffffff'));
 window.p.blockMap.addBlock(1, '#dd7777', 1);
-window.p.Load('8011')
-window.p.findCorners()
+window.p.Load('8011');
+window.p.findCorners();
 
 //Order rendering should be done in
 let list = [window.a, window.p];
 
 window.currentMove = window.p;
 window.currentEdit = window.a;
-currentEdit = window.currentEdit
-currentMove = window.currentMove
+currentEdit = window.currentEdit;
+currentMove = window.currentMove;
 let curMode = 0;
 
 document.getElementById('tools').addEventListener("change", (event) => {
@@ -60,12 +60,12 @@ onmousedown = (mouse) => {
   }
 }
 let keyMove = new Set();
-let keyRemove = new Set()
+let keyRemove = new Set();
 onkeydown = (event) => { keyMove.add(event.key) }
 onkeyup = (event) => { keyRemove.add(event.key) }
 
 window.speed = 1;
-window.gravity = new Vector(0, 0, 1)
+window.gravity = new Vector(0, 0, 1);
 const game = setInterval(() => {
   /*let debugCheck = document.getElementById("debug").checked
   if (debugCheck == true) {a.debugToggle = 1} else { a.debugToggle = 0 }*/
@@ -77,7 +77,7 @@ const game = setInterval(() => {
   else if (keyMove.has('a')) { currentMove.velocity.add(new Vector(-window.speed, 0), true) }
   else if (keyMove.has('d')) { currentMove.velocity.add(new Vector(window.speed, 0), true) }
   currentMove.velocity.add(window.gravity, true);
-  keyRemove.forEach((key) => {keyMove.delete(key)})
+  keyRemove.forEach((key) => { keyMove.delete(key) })
   keyRemove.clear();
   
   list.forEach((object) => {
