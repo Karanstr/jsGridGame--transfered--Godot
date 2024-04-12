@@ -166,7 +166,6 @@ class Quadtree {
     return largeKey.toString(16) + data.toString(16) + ' ';
   }
 
-  //Save Each Kid
   nonNullValSave() {
     let result = '', nodes = this.getKids(1);
     nodes[0].forEach((key) => {
