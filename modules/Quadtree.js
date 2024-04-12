@@ -167,20 +167,32 @@ class Quadtree {
   }
 
   //Save Each Kid
-  Save() {
+  nonNullValSave() {
     let result = '', nodes = this.getKids(1);
     nodes[0].forEach((key) => {
-      let node = this.getNode(key), data = node.data;
-      if (data != this.nullVal) {
-        result += this.encodeData(key, data);
-      }
+      let node = this.getNode(key);
+      if (node.data != this.nullVal) { result += this.encodeData(key, node.data);}
     })
     return result
   }
 
-  //Save top down using LOD
-  LODSave() { }
+  LODSave() {
+    let result = '', allNodes = this.getKids(1), nodes = [...allNodes[1], ...allNodes[0]];
+    let start = nodes.shift(); result += this.encodeData(start, this.getNode(start).data);
+    nodes.forEach((key) => {
+      let node = this.getNode(key);
+      if (node.data != this.getNode(key >> 2).data) { result += this.encodeData(key, node.data); }
+    })
+    return result
+  }
 
+  bestSave() {
+    let nNVS = this.nonNullValSave();
+    let LODS = this.LODSave();
+    if (LODS.length <= nNVS.length) { return LODS}
+    else { return nNVS }
+  }
+  
   //Tree Manipulation
   Assign(key, type, data, genLOD) {
     let layer = this.getLayer(key), node = new Node(type, data);
