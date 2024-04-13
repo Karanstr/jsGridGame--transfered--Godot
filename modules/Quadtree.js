@@ -27,59 +27,22 @@ class Quadtree {
     }
   }
 
-  setLayer(key, depth) {
-    let curLayer = this.getLayer(key);
-    let newKey = key;
-    if (curLayer < depth) {
-      for (let i = curLayer; i < depth; i++) { newKey <<= 2 }
-    }
-    if (curLayer > depth) {
-      for (let i = curLayer; i > depth; i--) { newKey >>= 2 }
-    }
-    return newKey
-  }
+  internalKey(key, layer) { return key - 2 ** (2 * layer) }
 
   Encode(x, y, layer) {
-    if (x < 0 || x > 2 ** layer - 1 || y < 0 || y > 2 ** layer - 1) {
-      throw new RangeError('Encode')
-    }
-    let xStr = x.toString(2), yStr = y.toString(2);
-    let xLen = xStr.length, yLen = yStr.length;
-    if (xLen != yLen) {
-      let strDif = Math.abs(xLen - yLen)
-      if (xLen < yLen) {
-        for (let i = 0; i < strDif; i++) {
-          xStr = '0' + xStr;
-        }
-      }
-      else if (yLen < xLen) {
-        for (let i = 0; i < strDif; i++) {
-          yStr = '0' + yStr;
-        }
-      }
-    }
-    let length = xStr.length;
-    if (length < layer) {
-      let dif = layer - length;
-      for (let i = 0; i < dif; i++) {
-        yStr = '0' + yStr; xStr = '0' + xStr;
-      }
-    }
-    let output = '1';
-    for (let i = 0; i < layer; i++) {
-      output += xStr[i] + yStr[i]
-    }
+    if (x < 0 || x > 2 ** layer - 1 || y < 0 || y > 2 ** layer - 1) { throw new RangeError('Encode') }
+    let xStr = x.toString(2), yStr = y.toString(2), output = '1';
+    while (xStr.length < layer) { xStr = '0' + xStr }
+    while (yStr.length < layer) { yStr = '0' + yStr }
+    for (let i = 0; i < layer; i++) { output += xStr[i] + yStr[i] }
     return parseInt(output, 2)
   }
 
   Decode(key) {
-    let layer = this.getLayer(key);
-    let x = 0, y = 0;
+    let layer = this.getLayer(key), x = 0, y = 0;
     for (let i = 0; i < layer; i++) {
-      let yBit = key % 2; key >>= 1;
-      let xBit = key % 2; key >>= 1;
-      x += xBit * 2 ** i;
-      y += yBit * 2 ** i;
+      y += (key % 2) * (2 ** i); key >>= 1;
+      x += (key % 2) * (2 ** i); key >>= 1;
     }
     return [x, y, layer]
   }
@@ -109,7 +72,8 @@ class Quadtree {
 
   //Tree Reading
   getNode(key) {
-    return this.tree.get(this.getLayer(key)).get(key)
+    let layer = this.getLayer(key)
+    return this.tree.get(layer).get(this.internalKey(key, layer))
   }
 
   getSide(key, xOff, yOff) {
@@ -170,7 +134,7 @@ class Quadtree {
     let result = '', nodes = this.getKids(1);
     nodes[0].forEach((key) => {
       let node = this.getNode(key);
-      if (node.data != this.nullVal) { result += this.encodeData(key, node.data);}
+      if (node.data != this.nullVal) { result += this.encodeData(key, node.data); }
     })
     return result
   }
@@ -188,14 +152,14 @@ class Quadtree {
   bestSave() {
     let nNVS = this.nonNullValSave();
     let LODS = this.LODSave();
-    if (LODS.length <= nNVS.length) { return LODS}
+    if (LODS.length <= nNVS.length) { return LODS }
     else { return nNVS }
   }
-  
+
   //Tree Manipulation
   Assign(key, type, data, genLOD) {
     let layer = this.getLayer(key), node = new Node(type, data);
-    this.tree.get(layer).set(key, node);
+    this.tree.get(layer).set(this.internalKey(key, layer), node);
     if (genLOD != false && key != 1) {
       this.generateLOD(key >> 2);
     }
@@ -207,7 +171,7 @@ class Quadtree {
       let kids = this.getKids(key).flat();
       kids.forEach((kid) => {
         let kidLayer = this.getLayer(kid);
-        this.tree.get(kidLayer).delete(kid);
+        this.tree.get(kidLayer).delete(this.internalKey(key, kidLayer));
       })
     }
     this.Assign(key, 0, value);
