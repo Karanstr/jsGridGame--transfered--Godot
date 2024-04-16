@@ -165,7 +165,7 @@ class Quadtree {
 
   Assign(key, type, data, genLOD) {
     this.setNode(key, this.encodeData(type, data));
-    if (genLOD != false) { this.generateLOD(key >> 2) }
+    if (genLOD != false && key != 1) { this.generateLOD(key >> 2) }
   }
 
   Replace(key, value, merge) {
