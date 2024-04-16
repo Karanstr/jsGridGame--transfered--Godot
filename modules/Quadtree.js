@@ -10,8 +10,8 @@ class Node {
 class Quadtree {
   constructor(depth, nullVal) {
     this.depth = depth;
-    this.tree = new Map()
-    for (let i = 0; i < depth; i++) { this.tree.set(i, new Map()) }
+    this.tree = []
+    for (let i = 0; i < depth; i++) { this.tree[i] = [] }
     this.Assign(1, 0, nullVal)
     this.nullVal = nullVal;
   }
@@ -19,17 +19,15 @@ class Quadtree {
   //Key Manipulation
   getLayer(key) {
     let strKey = key.toString(2)
-    if (strKey.length % 2 == 1) {
-      return (strKey.length - 1) / 2
-    }
-    else {
-      throw new RangeError('getLayer ' + key)
-    }
+    if (strKey.length % 2 == 1) { return (strKey.length - 1) / 2 }
+    else { throw new RangeError('getLayer ' + key) }
   }
 
-  internalKey(key, layer) { return key - 2 ** (2 * layer) }
+  internalKey(key, layer) {
+    return key - 2 ** (2 * layer)
+  }
 
-  Encode(x, y, layer) {
+  encodeKey(x, y, layer) {
     if (x < 0 || x > 2 ** layer - 1 || y < 0 || y > 2 ** layer - 1) { throw new RangeError('Encode') }
     let xStr = x.toString(2), yStr = y.toString(2), output = '1';
     while (xStr.length < layer) { xStr = '0' + xStr }
@@ -38,7 +36,7 @@ class Quadtree {
     return parseInt(output, 2)
   }
 
-  Decode(key) {
+  decodeKey(key) {
     let layer = this.getLayer(key), x = 0, y = 0;
     for (let i = 0; i < layer; i++) {
       y += (key % 2) * (2 ** i); key >>= 1;
@@ -52,7 +50,7 @@ class Quadtree {
     if (layer > this.depth) { throw new RangeError('Key unreachable; gKP') }
     let progression = [key];
     for (let i = 1; i <= layer; i++) {
-      progression.push(key >> (2 * i))
+      progression.push(key >>= 2)
     }
     return progression.reverse()
   }
@@ -71,9 +69,12 @@ class Quadtree {
   }
 
   //Tree Reading
-  getNode(key) {
+  readNode(key) {
     let layer = this.getLayer(key)
-    return this.tree.get(layer).get(this.internalKey(key, layer))
+    let node = this.tree[layer][this.internalKey(key, layer)]
+    if (node == undefined) { return undefined }
+    let data = node >> 1; let type = node % 2;
+    return new Node(type, data)
   }
 
   getSide(key, xOff, yOff) {
@@ -83,12 +84,12 @@ class Quadtree {
     if (yOff < 0) { kidMods.delete(0); kidMods.delete(2); }
     else if (yOff > 0) { kidMods.delete(1); kidMods.delete(3); }
 
-    let coords = this.Decode(key); let keyList = []; let foundKeys = [];
+    let coords = this.decodeKey(key); let keyList = []; let foundKeys = [];
 
-    try { keyList.push(this.Encode(coords[0] + xOff, coords[1] + yOff, coords[2])) } catch (error) { return }
+    try { keyList.push(this.encodeKey(coords[0] + xOff, coords[1] + yOff, coords[2])) } catch (error) { return }
     while (keyList.length != 0) {
       let currentKey = keyList.pop()
-      let node = this.getNode(currentKey);
+      let node = this.readNode(currentKey);
       if (node == undefined) { keyList.push(currentKey >>= 2) }
       else if (node.type == 0) { foundKeys.push(currentKey) }
       else if (node.type == 1) {
@@ -103,16 +104,12 @@ class Quadtree {
 
   getKids(key, first) {
     if (first == undefined) { this.kids = [[], []] }
-    let node = this.getNode(key);
-    if (node.type == 0) {
-      this.kids[0].push(key);
-    }
+    let node = this.readNode(key);
+    if (node.type == 0) { this.kids[0].push(key) }
     else if (node.type == 1) {
       this.kids[1].push(key);
       let newKey = key << 2
-      for (let i = 0; i < 4; i++) {
-        this.getKids(newKey + i, false);
-      }
+      for (let i = 0; i < 4; i++) { this.getKids(newKey + i, false) }
     }
     if (first == undefined) {
       let kidList = this.kids;
@@ -121,7 +118,7 @@ class Quadtree {
     }
   }
 
-  encodeData(key, data) {
+  encodeSaveData(key, data) {
     let keyLayer = this.getLayer(key), largeStr = '1';
     if (keyLayer < this.depth) {
       for (let i = keyLayer; i < this.depth; i++) { largeStr += '00' }
@@ -133,18 +130,18 @@ class Quadtree {
   nonNullValSave() {
     let result = '', nodes = this.getKids(1);
     nodes[0].forEach((key) => {
-      let node = this.getNode(key);
-      if (node.data != this.nullVal) { result += this.encodeData(key, node.data); }
+      let data = this.getData(key); let type = data % 2
+      if (node.data != this.nullVal) { result += this.encodeSaveData(key, node.data); }
     })
     return result
   }
 
   LODSave() {
     let result = '', allNodes = this.getKids(1), nodes = [...allNodes[1], ...allNodes[0]];
-    let start = nodes.shift(); result += this.encodeData(start, this.getNode(start).data);
+    let start = nodes.shift(); result += this.encodeSaveData(start, this.getNode(start).data);
     nodes.forEach((key) => {
       let node = this.getNode(key);
-      if (node.data != this.getNode(key >> 2).data) { result += this.encodeData(key, node.data); }
+      if (node.data != this.getNode(key >> 2).data) { result += this.encodeSaveData(key, node.data); }
     })
     return result
   }
@@ -157,50 +154,46 @@ class Quadtree {
   }
 
   //Tree Manipulation
+  encodeData(type, data) {
+    return (data << 1) + type;
+  }
+
+  setNode(key, value) {
+    let layer = this.getLayer(key);
+    this.tree[layer][this.internalKey(key, layer)] = value;
+  }
+
   Assign(key, type, data, genLOD) {
-    let layer = this.getLayer(key), node = new Node(type, data);
-    this.tree.get(layer).set(this.internalKey(key, layer), node);
-    if (genLOD != false && key != 1) {
-      this.generateLOD(key >> 2);
-    }
+    this.setNode(key, this.encodeData(type, data));
+    if (genLOD != false) { this.generateLOD(key >> 2) }
   }
 
   Replace(key, value, merge) {
-    let node = this.getNode(key);
+    let node = this.readNode(key);
     if (node.type == 1) {
       let kids = this.getKids(key).flat();
-      kids.forEach((kid) => {
-        let kidLayer = this.getLayer(kid);
-        this.tree.get(kidLayer).delete(this.internalKey(key, kidLayer));
-      })
+      kids.forEach((kid) => { this.setNode(kid, undefined) })
     }
-    this.Assign(key, 0, value);
+    this.Assign(key, 0, value, true);
     if (key != 1 && merge) { this.Merge(key >> 2, false) }
   }
 
   Populate(key, data) {
     let steps = this.getKeyProgession(key);
-    for (let i = 0; i < steps.length; i++) {
-      let node = this.getNode(steps[i]);
-      if (key == steps[i]) {
-        if (node.type == 1) { this.Replace(key, this.nullVal) }
-        this.Assign(key, 0, data);
-      }
-      else if (node.type == 0) {
-        this.Split(steps[i]);
-      }
+    for (let i = 0; i < steps.length - 1; i++) {
+      let node = this.readNode(steps[i]);
+      if (node.type == 0) { this.Split(steps[i]) }
     }
+    this.Replace(key, data, false);
   }
 
   Split(key) {
-    let layer = this.getLayer(key), node = this.getNode(key);
+    let node = this.readNode(key);
     if (node.type == 0) {
-      if (layer < this.depth - 1) {
+      if (this.getLayer(key) < this.depth - 1) {
         let newKey = key << 2;
-        for (let i = 0; i < 4; i++) {
-          this.Assign(newKey + i, 0, node.data, false);
-        }
-        node.type = 1;
+        for (let i = 0; i < 4; i++) { this.Assign(newKey + i, 0, node.data, false) }
+        this.Assign(key, 1, node.data, false);
       }
       else { console.log('Cannot Split Lowest Level: ' + key) }
     }
@@ -208,29 +201,23 @@ class Quadtree {
   }
 
   Merge(key, first) {
-    let node = this.getNode(key);
+    let node = this.readNode(key);
     if (node.type == 0) { console.log('Cannot merge leaf: ' + key) }
-    else if (node.type == 1 && first == undefined) {
+    else if (first == undefined) {
       let branches = this.getKids(key)[1].sort((a, b) => b - a);
-      branches.forEach((branch) => {
-        this.Merge(branch, false);
-      })
+      branches.forEach((branch) => { this.Merge(branch, false) })
     }
     else if (node.type == 1) {
       let kidVals = new Set(), newKey = key << 2, value;
       for (let i = 0; i < 4; i++) {
-        let newNode = this.getNode(newKey + i);
+        let newNode = this.readNode(newKey + i);
         if (newNode.type == 0) {
           value = newNode.data;
           kidVals.add(value);
         }
-        else if (newNode.type == 1) {
-          kidVals.add(undefined)
-        }
+        else if (newNode.type == 1) { kidVals.add(undefined) }
       }
-      if (kidVals.size == 1 && value != undefined) {
-        this.Replace(key, value)
-      }
+      if (kidVals.size == 1 && value != undefined) { this.Replace(key, value) }
     }
   }
 
@@ -248,23 +235,19 @@ class Quadtree {
   }
 
   generateLOD(key) {
-    let node = this.getNode(key);
+    if (key < 1) { console.log('Invalid key' + key); return }
+    let node = this.readNode(key);
     if (node == undefined) { throw 'Invalid Key ' + key }
     if (node.type == 0) { console.log('Cannot generateLOD of a leaf: ' + key) }
     else if (node.type == 1) {
       let newKey = key << 2, kidVals = new Set(), lodVal;
       for (let i = 0; i < 4; i++) {
-        let kidNode = this.getNode(newKey + i);
+        let kidNode = this.readNode(newKey + i);
         lodVal = kidNode.data;
-        if (kidVals.has(kidNode.data)) {
-          break;
-        }
+        if (kidVals.has(kidNode.data)) { break }
         else { kidVals.add(kidNode.data) }
       }
-      if (node.data != lodVal && key != 1) {
-        node.data = lodVal;
-        this.generateLOD(key >> 2)
-      }
+      if (node.data != lodVal && key != 1) { this.Assign(key, node.type, lodVal, true) }
     }
   }
 
