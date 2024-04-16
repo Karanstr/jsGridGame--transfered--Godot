@@ -28,8 +28,6 @@ class hitData {
     this.distance;
   }
 }
-
-//Important Bit
 class Region extends Quadtree {
   constructor(x, y, width, height, blockMap) {
     super(5, 0);
@@ -43,7 +41,7 @@ class Region extends Quadtree {
   }
 
   getBoxDimensions(key) {
-    let coords = this.Decode(key);
+    let coords = this.decodeKey(key);
     let scale = 2 ** coords[2];
     let width = this.length.x / scale, height = this.length.y / scale;
     let x = coords[0] * width + this.position.x;
@@ -55,7 +53,7 @@ class Region extends Quadtree {
     let keys = this.getKids(1);
     Render.outlineBox(this.position, this.length, 'black')
     keys[0].forEach((leaf) => {
-      let node = this.getNode(leaf);
+      let node = this.readNode(leaf);
       if (node.data != 0) {
         let box = this.getBoxDimensions(leaf);
         let color = this.blockMap.getBlock(node.data).color;
@@ -83,23 +81,23 @@ class Region extends Quadtree {
     let result = new Set();
     //Do stuff with this, currently triggers if statement if point is a corner.
     //top left 0
-    if ((top == undefined || this.getNode(top[0]).data == this.nullVal) &&
-      (left == undefined || this.getNode(left[0]).data == this.nullVal)) {
+    if ((top == undefined || this.readNode(top[0]).data == this.nullVal) &&
+      (left == undefined || this.readNode(left[0]).data == this.nullVal)) {
       result.add(0)
     }
     //bottom left 1
-    if ((bottom == undefined || this.getNode(bottom[0]).data == this.nullVal) &&
-      (left == undefined || this.getNode(left[left.length - 1]).data == this.nullVal)) {
+    if ((bottom == undefined || this.readNode(bottom[0]).data == this.nullVal) &&
+      (left == undefined || this.readNode(left[left.length - 1]).data == this.nullVal)) {
       result.add(1)
     }
     //top right 2
-    if ((top == undefined || this.getNode(top[top.length - 1]).data == this.nullVal) &&
-      (right == undefined || this.getNode(right[0]).data == this.nullVal)) {
+    if ((top == undefined || this.readNode(top[top.length - 1]).data == this.nullVal) &&
+      (right == undefined || this.readNode(right[0]).data == this.nullVal)) {
       result.add(2)
     }
     //bottom right 3
-    if ((bottom == undefined || this.getNode(bottom[bottom.length - 1]).data == this.nullVal) &&
-      (right == undefined || this.getNode(right[right.length - 1]).data == this.nullVal)) {
+    if ((bottom == undefined || this.readNode(bottom[bottom.length - 1]).data == this.nullVal) &&
+      (right == undefined || this.readNode(right[right.length - 1]).data == this.nullVal)) {
       result.add(3)
     }
     return result
@@ -109,7 +107,7 @@ class Region extends Quadtree {
     let kids = this.getKids(1)[0];
     this.cornerList = [];
     kids.forEach((key) => {
-      let node = this.getNode(key);
+      let node = this.readNode(key);
       if (node.data != this.nullVal) {
         let box = this.getBoxDimensions(key);
         box.position.subtract(this.position, true)
@@ -146,8 +144,8 @@ class Region extends Quadtree {
           if (originPoint.x == 0 && i == 0) { scaledX = -1 }
           if (originPoint.y == 0 && j == 0) { scaledY = -1 }
           try {
-            let key = this.Encode(scaledX, scaledY, layer);
-            let node = this.getNode(key);
+            let key = this.encodeKey(scaledX, scaledY, layer);
+            let node = this.readNode(key);
             if (node.type == 0) {
               keys.push(key)
               break
@@ -159,7 +157,7 @@ class Region extends Quadtree {
     if (badcount == 4) { return undefined }
     return keys
   }
-  
+
   pointCull(velocity) {
     let cullSet = new Set();
     if (velocity.x == 0 && velocity.y != 0) {
@@ -168,7 +166,7 @@ class Region extends Quadtree {
     }
     else if (velocity.x != 0 && velocity.y == 0) {
       if (velocity.x < 0) { cullSet.add(0); cullSet.add(1) }
-      else if (velocity.x > 0 ) { cullSet.add(2); cullSet.add(3) }
+      else if (velocity.x > 0) { cullSet.add(2); cullSet.add(3) }
     }
     else if (velocity.x < 0 && velocity.y < 0) { cullSet.add(0); cullSet.add(1); cullSet.add(2); }
     else if (velocity.x < 0 && velocity.y > 0) { cullSet.add(0); cullSet.add(1); cullSet.add(3); }
@@ -179,7 +177,7 @@ class Region extends Quadtree {
 
   keyCull(keys, direction, velocity) {
     let velDirection = velocity.sign();
-    if (keys == undefined) {keys = []}
+    if (keys == undefined) { keys = [] }
     let keyList = new Set([0, 1, 2, 3]), key;
     if (velocity.x < 0) { keyList.delete(2); keyList.delete(3); }
     else if (velocity.x > 0) { keyList.delete(0); keyList.delete(1); }
@@ -200,15 +198,12 @@ class Region extends Quadtree {
       }
     }
     else { key = keyOptions[0] }
-    //console.log(key)
     return key
   }
 
-  
-
   stepSquare(startPoint, velocity, key) {
     let sign = velocity.sign(), flip = 1; if (key == undefined) { key = 1; flip = -1; }
-    else {let node = this.getNode(key); if (this.blockMap.getBlock(node.data).collisionType != 0) {flip = -1} }
+    else { let node = this.readNode(key); if (this.blockMap.getBlock(node.data).collisionType != 0) { flip = -1 } }
     let box = this.getBoxDimensions(key);
     let halfLength = box.length.divideScalar(2);
     let cornerPoint = box.center.add(halfLength.multiply(sign).multiplyScalar(flip))
@@ -237,12 +232,12 @@ class Region extends Quadtree {
       hit.key = this.keyCull(keys, direction, velocity)
       if (hit.key == undefined) { traveled = distance } //Hitting Edge of Region
       else {
-        let node = this.getNode(hit.key);
+        let node = this.readNode(hit.key);
         let collisionType = this.blockMap.getBlock(node.data).collisionType;
         if (collisionType != 0) { end = true } //Hitting Wall
         else {
           traveled += hit.point.subtract(point).length();
-          point = hit.point; 
+          point = hit.point;
         }
       }
     }
@@ -252,13 +247,13 @@ class Region extends Quadtree {
   //Collision Safety Checks
   slideCheck(key, x, y) {
     let update = false;
-    let sideCheck = this.getSide(key, x*-1, y*-1);
+    let sideCheck = this.getSide(key, x * -1, y * -1);
     if (sideCheck != undefined) {
       let node;
-      if (x == 1 || y == 1) { node = this.getNode(sideCheck[0])}
-      else if (x == -1 || y == -1) { node = this.getNode(sideCheck[sideCheck.length - 1]) }
+      if (x == 1 || y == 1) { node = this.readNode(sideCheck[0]) }
+      else if (x == -1 || y == -1) { node = this.readNode(sideCheck[sideCheck.length - 1]) }
       let colType = this.blockMap.getBlock(node.data).collisionType;
-      if (colType == 0) { update = true}
+      if (colType == 0) { update = true }
     } else { update = true }
     return update
   }
@@ -281,7 +276,7 @@ class Region extends Quadtree {
 
   //Returns solution velocity
   checkCollision(start, velocity, target) {
-    let finalHit, breakout = false;
+    let finalHit;
     let currentVelocity = velocity.clone();
     let cullSet = this.pointCull(velocity), culledCorners = [];
     this.cornerList.forEach((corner) => { if (cullSet.has(corner.direction)) { culledCorners.push(corner) } })
@@ -292,7 +287,7 @@ class Region extends Quadtree {
       let hit = target.calcHit(cornerPoint, corner.direction, currentVelocity);
 
       if (hit != undefined && hit.key != undefined) {
-        let node = target.getNode(hit.key);
+        let node = target.readNode(hit.key);
         if (node.data != target.nullVal) { //If not hitting an empty space
           let updateX = false, updateY = false;
           let peekCheck = this.peekCheck(corner.key, this, hit.key, target, currentVelocity)
@@ -315,7 +310,7 @@ class Region extends Quadtree {
     }
     return finalHit
   }
-  
+
   moveWithCollisions(target) {
     let foundWalls = new Vector(false, false, 3), done = false;
     while ((!foundWalls.x || !foundWalls.y) && !done) {
@@ -323,12 +318,12 @@ class Region extends Quadtree {
       if (hit == undefined) {
         this.position.add(this.velocity, true);
         done = true;
-      } 
+      }
       else {
         this.position.add(hit.distance, true);
         this.velocity.subtract(hit.distance, true);
-        if (hit.wall.x != 0) { foundWalls.x = true; this.velocity.x = 0}
-        if (hit.wall.y != 0) { foundWalls.y = true; this.velocity.y = 0} 
+        if (hit.wall.x != 0) { foundWalls.x = true; this.velocity.x = 0 }
+        if (hit.wall.y != 0) { foundWalls.y = true; this.velocity.y = 0 }
       }
     }
   }

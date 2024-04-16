@@ -6,7 +6,7 @@ let canData = canvas.getBoundingClientRect();
 window.Render = Render;
 window.Vector = Vector;
 
-/*
+
 window.Non = function (degree) {
   let totalStorage = 0;
   for (let j = 0; j < degree; j++) {
@@ -30,7 +30,7 @@ window.With = function (degree) {
     totalStorage += b;
   }
   return totalStorage
-}*/
+}
 
 window.a = new Region(125, 125, 160, 160, new blockMap('#ffffff'));
 window.a.blockMap.addBlock(1, '#777777', 1);
