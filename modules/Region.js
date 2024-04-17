@@ -21,10 +21,11 @@ class corner {
   }
 }
 class hitData {
-  constructor(point, wall, key) {
+  constructor(point, wall, key, keys) {
     this.point = point;
     this.wall = wall; // Rename to direction?
     this.key = key;
+    this.keys = keys;
     this.distance;
   }
 }
@@ -79,7 +80,6 @@ class Region extends Quadtree {
     let left = this.getSide(key, -1, 0);
     let right = this.getSide(key, 1, 0);
     let result = new Set();
-    //Do stuff with this, currently triggers if statement if point is a corner.
     //top left 0
     if ((top == undefined || this.readNode(top[0]).data == this.nullVal) &&
       (left == undefined || this.readNode(left[0]).data == this.nullVal)) {
@@ -133,6 +133,10 @@ class Region extends Quadtree {
   }
   //Corner End
   //Collision/Physics Start
+  readColType(key) {
+    return this.blockMap.getBlock(this.readNode(key).data).collisionType
+  }
+
   getKeys(point) {
     let originPoint = point.subtract(this.position)
     let keys = []; let badcount = 0; let offset = .001;
@@ -202,8 +206,8 @@ class Region extends Quadtree {
   }
 
   stepSquare(startPoint, velocity, key) {
-    let sign = velocity.sign(), flip = 1; if (key == undefined) { key = 1; flip = -1; }
-    else { let node = this.readNode(key); if (this.blockMap.getBlock(node.data).collisionType != 0) { flip = -1 } }
+    let sign = velocity.sign(), flip = 1;
+    if (key == undefined) { key = 1; flip = -1; } else if (this.readColType(key) != 0) { flip = -1 }
     let box = this.getBoxDimensions(key);
     let halfLength = box.length.divideScalar(2);
     let cornerPoint = box.center.add(halfLength.multiply(sign).multiplyScalar(flip))
@@ -224,17 +228,15 @@ class Region extends Quadtree {
   calcHit(cornerPos, direction, velocity) {
     let distance = velocity.length(); if (distance == 0) { return }
     let traveled = 0, point = cornerPos, hit = new hitData(), end = false;
-    let keys = this.getKeys(point);
-    hit.key = this.keyCull(keys, direction, velocity);
+    hit.keys = this.getKeys(point);
+    hit.key = this.keyCull(hit.keys, direction, velocity);
     while (traveled < distance && end == false) {
       hit = this.stepSquare(point, velocity, hit.key);
-      keys = this.getKeys(hit.point);
-      hit.key = this.keyCull(keys, direction, velocity)
+      hit.keys = this.getKeys(hit.point);
+      hit.key = this.keyCull(hit.keys, direction, velocity)
       if (hit.key == undefined) { traveled = distance } //Hitting Edge of Region
       else {
-        let node = this.readNode(hit.key);
-        let collisionType = this.blockMap.getBlock(node.data).collisionType;
-        if (collisionType != 0) { end = true } //Hitting Wall
+        if (this.readColType(hit.key) != 0) { end = true } //Hitting Wall
         else {
           traveled += hit.point.subtract(point).length();
           point = hit.point;
@@ -245,17 +247,16 @@ class Region extends Quadtree {
   }
 
   //Collision Safety Checks
-  slideCheck(key, x, y) {
-    let update = false;
-    let sideCheck = this.getSide(key, x * -1, y * -1);
-    if (sideCheck.length == 1) {
-      let node;
-      if (x == 1 || y == 1) { node = this.readNode(sideCheck[0]) }
-      else if (x == -1 || y == -1) { node = this.readNode(sideCheck[sideCheck.length - 1]) }
-      let colType = this.blockMap.getBlock(node.data).collisionType;
-      if (colType == 0) { update = true }
-    } else { update = true }
-    return update
+  slideCheck(hitData) {
+    let xKey, yKey; let result = new Vector(true, true, 3)
+    if (hitData.wall.x == 1 && hitData.wall.y == 1) { xKey = hitData.keys[1]; yKey = hitData.keys[2]; }
+    else if (hitData.wall.x == -1 && hitData.wall.y == 1) { xKey = hitData.keys[3]; yKey = hitData.keys[0]; }
+    else if (hitData.wall.x == 1 && hitData.wall.y == -1) { xKey = hitData.keys[0]; yKey = hitData.keys[3]; }
+    else if (hitData.wall.x == -1 && hitData.wall.y == -1) { xKey = hitData.keys[2]; yKey = hitData.keys[1]; }
+
+    if (xKey != undefined && this.readColType(xKey) != 0) { result.x = false }
+    if (yKey != undefined && this.readColType(yKey) != 0) { result.y = false }
+    return result
   }
 
   wallHangCheck(cornerKey, cornerRegion, hitKey, hitRegion, velocity) {
@@ -280,31 +281,21 @@ class Region extends Quadtree {
     let currentVelocity = velocity.clone();
     let cullSet = this.pointCull(velocity), culledCorners = [];
     this.cornerList.forEach((corner) => { if (cullSet.has(corner.direction)) { culledCorners.push(corner) } })
-
     for (let i = 0; i < culledCorners.length; i++) {
       let corner = culledCorners[i];
       let cornerPoint = corner.point.add(start)
       let hit = target.calcHit(cornerPoint, corner.direction, currentVelocity);
-
-      if (hit != undefined && hit.key != undefined) {
-        let node = target.readNode(hit.key);
-        if (node.data != target.nullVal) { //If not hitting an empty space
-          let updateX = false, updateY = false;
-          let wallHangCheck = this.wallHangCheck(corner.key, this, hit.key, target, currentVelocity)
-          let option = hit.point.subtract(cornerPoint)
-
-          //If (Wall is hit and not peeking) {Check if wall passes the slide test}
-          if (hit.wall.x != 0 && wallHangCheck.x) { updateX = target.slideCheck(hit.key, hit.wall.x, 0) }
-          if (hit.wall.y != 0 && wallHangCheck.y) { updateY = target.slideCheck(hit.key, 0, hit.wall.y) }
-
-          if (!updateX) { hit.wall.x = 0 }
-          if (!updateY) { hit.wall.y = 0 }
-          //If collision is valid, check if it's shorter than current best alternative
-          if ((updateX || updateY) && option.length() < currentVelocity.length()) {
-            finalHit = hit;
-            finalHit.distance = option;
-            if (option.length() == 0) { return finalHit }
-          }
+      //If hitting something I need to collide with
+      if (hit != undefined && hit.key != undefined && target.readColType(hit.key) != 0) {
+        hit.distance = hit.point.subtract(cornerPoint)
+        let slide, updateX = false, updateY = false;
+        let wallHangCheck = this.wallHangCheck(corner.key, this, hit.key, target, currentVelocity)
+        if (hit.wall.x != 0 && hit.wall.y != 0) { slide = target.slideCheck(hit) } else { slide = new Vector(true, true, 3) }
+        if (wallHangCheck.x && slide.x) { updateX = true } else { hit.wall.x = 0 }
+        if (wallHangCheck.y && slide.y) { updateY = true } else { hit.wall.y = 0 }
+        //If collision is valid, check if it's shorter than current best alternative
+        if ((updateX || updateY) && hit.distance.length() < currentVelocity.length()) {
+          if (hit.distance.length() == 0) { return hit } else { finalHit = hit }
         }
       }
     }
