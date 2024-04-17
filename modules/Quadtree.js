@@ -130,7 +130,7 @@ class Quadtree {
   nonNullValSave() {
     let result = '', nodes = this.getKids(1);
     nodes[0].forEach((key) => {
-      let data = this.getData(key); let type = data % 2
+      let node = this.readNode(key);
       if (node.data != this.nullVal) { result += this.encodeSaveData(key, node.data); }
     })
     return result
@@ -138,10 +138,10 @@ class Quadtree {
 
   LODSave() {
     let result = '', allNodes = this.getKids(1), nodes = [...allNodes[1], ...allNodes[0]];
-    let start = nodes.shift(); result += this.encodeSaveData(start, this.getNode(start).data);
+    let start = nodes.shift(); result += this.encodeSaveData(start, this.readNode(start).data);
     nodes.forEach((key) => {
-      let node = this.getNode(key);
-      if (node.data != this.getNode(key >> 2).data) { result += this.encodeSaveData(key, node.data); }
+      let node = this.readNode(key);
+      if (node.data != this.readNode(key >> 2).data) { result += this.encodeSaveData(key, node.data); }
     })
     return result
   }
