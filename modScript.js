@@ -75,7 +75,7 @@ onmousedown = (mouse) => {
           currentEdit.Split(key);
           break;
         case 2:
-          let node = currentEdit.getNode(key);
+          let node = currentEdit.readNode(key);
           let info = key + ' ' + node.data + ' ' + currentEdit.blockMap.getBlock(node.data).color;
           document.getElementById('Data').innerHTML = info;
           break;
