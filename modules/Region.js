@@ -248,7 +248,7 @@ class Region extends Quadtree {
   slideCheck(key, x, y) {
     let update = false;
     let sideCheck = this.getSide(key, x * -1, y * -1);
-    if (sideCheck != undefined) {
+    if (sideCheck.length == 1) {
       let node;
       if (x == 1 || y == 1) { node = this.readNode(sideCheck[0]) }
       else if (x == -1 || y == -1) { node = this.readNode(sideCheck[sideCheck.length - 1]) }
@@ -258,7 +258,7 @@ class Region extends Quadtree {
     return update
   }
 
-  peekCheck(cornerKey, cornerRegion, hitKey, hitRegion, velocity) {
+  wallHangCheck(cornerKey, cornerRegion, hitKey, hitRegion, velocity) {
     let truth = new Vector(false, false, 3);
     let cornerBox = cornerRegion.getBoxDimensions(cornerKey);
     let hitBox = hitRegion.getBoxDimensions(hitKey);
@@ -290,12 +290,12 @@ class Region extends Quadtree {
         let node = target.readNode(hit.key);
         if (node.data != target.nullVal) { //If not hitting an empty space
           let updateX = false, updateY = false;
-          let peekCheck = this.peekCheck(corner.key, this, hit.key, target, currentVelocity)
+          let wallHangCheck = this.wallHangCheck(corner.key, this, hit.key, target, currentVelocity)
           let option = hit.point.subtract(cornerPoint)
 
           //If (Wall is hit and not peeking) {Check if wall passes the slide test}
-          if (hit.wall.x != 0 && peekCheck.x) { updateX = target.slideCheck(hit.key, hit.wall.x, 0) }
-          if (hit.wall.y != 0 && peekCheck.y) { updateY = target.slideCheck(hit.key, 0, hit.wall.y) }
+          if (hit.wall.x != 0 && wallHangCheck.x) { updateX = target.slideCheck(hit.key, hit.wall.x, 0) }
+          if (hit.wall.y != 0 && wallHangCheck.y) { updateY = target.slideCheck(hit.key, 0, hit.wall.y) }
 
           if (!updateX) { hit.wall.x = 0 }
           if (!updateY) { hit.wall.y = 0 }
