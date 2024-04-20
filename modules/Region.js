@@ -1,7 +1,7 @@
 
 import Quadtree from "./Quadtree.js";
 import Vector from "./Vector2.js"
-//import PhysObject from "./Physics.js";
+import PhysObject from "./Physics.js";
 import * as Render from "./Render.js";
 export { Region, blockMap }
 
@@ -32,27 +32,25 @@ class hitData {
 class Region extends Quadtree {
   constructor(x, y, width, height, blockMap) {
     super(5, 0);
-    this.position = new Vector(x, y, 0);
-    this.velocity = new Vector(0, 0, 1);
+    this.physics = new PhysObject(x, y, .9);
     this.length = new Vector(width, height, 1);
     this.blockMap = blockMap;
     this.cornerList = [];
-    this.debugToggle = 0;
-    //this.physics = new PhysObject();
+    this.debug = true;
   }
 
   getBoxDimensions(key) {
     let coords = this.decodeKey(key);
     let scale = 2 ** coords[2];
     let width = this.length.x / scale, height = this.length.y / scale;
-    let x = coords[0] * width + this.position.x;
-    let y = coords[1] * height + this.position.y;
+    let x = coords[0] * width + this.physics.position.x;
+    let y = coords[1] * height + this.physics.position.y;
     return new box(x, y, width, height)
   }
 
   Render() {
     let keys = this.getKids(1);
-    Render.outlineBox(this.position, this.length, 'black')
+    Render.outlineBox(this.physics.position, this.length, 'black');
     keys[0].forEach((leaf) => {
       let node = this.readNode(leaf);
       if (node.data != 0) {
@@ -63,8 +61,8 @@ class Region extends Quadtree {
     })
     keys[1].forEach((branch) => {
       let box = this.getBoxDimensions(branch);
-      Render.drawLine(new Vector(box.position.x, box.center.y, 0), new Vector(box.length.x, 0, 1), 'black')
-      Render.drawLine(new Vector(box.center.x, box.position.y, 0), new Vector(0, box.length.y, 1), 'black')
+      Render.drawLine(new Vector(box.position.x, box.center.y, 0), new Vector(box.length.x, 0, 1), 'black');
+      Render.drawLine(new Vector(box.center.x, box.position.y, 0), new Vector(0, box.length.y, 1), 'black');
     })
   }
 
@@ -83,22 +81,22 @@ class Region extends Quadtree {
     //top left 0
     if ((top == undefined || this.readNode(top[0]).data == this.nullVal) &&
       (left == undefined || this.readNode(left[0]).data == this.nullVal)) {
-      result.add(0)
+      result.add(0);
     }
     //bottom left 1
     if ((bottom == undefined || this.readNode(bottom[0]).data == this.nullVal) &&
       (left == undefined || this.readNode(left[left.length - 1]).data == this.nullVal)) {
-      result.add(1)
+      result.add(1);
     }
     //top right 2
     if ((top == undefined || this.readNode(top[top.length - 1]).data == this.nullVal) &&
       (right == undefined || this.readNode(right[0]).data == this.nullVal)) {
-      result.add(2)
+      result.add(2);
     }
     //bottom right 3
     if ((bottom == undefined || this.readNode(bottom[bottom.length - 1]).data == this.nullVal) &&
       (right == undefined || this.readNode(right[right.length - 1]).data == this.nullVal)) {
-      result.add(3)
+      result.add(3);
     }
     return result
   }
@@ -109,27 +107,18 @@ class Region extends Quadtree {
     kids.forEach((key) => {
       let node = this.readNode(key);
       if (node.data != this.nullVal) {
-        let box = this.getBoxDimensions(key);
-        box.position.subtract(this.position, true)
-        let corners = this.getCorners(key);
-        if (corners.has(0)) {
-          this.cornerList.push(new corner(box.position, key, 0))
-        }
-        if (corners.has(1)) {
-          this.cornerList.push(new corner(new Vector(box.position.x, box.position.y + box.length.y, 0), key, 1))
-        }
-        if (corners.has(2)) {
-          this.cornerList.push(new corner(new Vector(box.position.x + box.length.x, box.position.y, 0), key, 2))
-        }
-        if (corners.has(3)) {
-          this.cornerList.push(new corner(box.position.add(box.length), key, 3))
-        }
+        let box = this.getBoxDimensions(key), corners = this.getCorners(key);
+        box.position.subtract(this.physics.position, true);
+        if (corners.has(0)) { this.cornerList.push(new corner(box.position, key, 0)) }
+        if (corners.has(1)) { this.cornerList.push(new corner(new Vector(box.position.x, box.position.y + box.length.y, 0), key, 1)) }
+        if (corners.has(2)) { this.cornerList.push(new corner(new Vector(box.position.x + box.length.x, box.position.y, 0), key, 2)) }
+        if (corners.has(3)) { this.cornerList.push(new corner(box.position.add(box.length), key, 3)) }
       }
     })
   }
 
   drawCorners() {
-    this.cornerList.forEach((corner) => { Render.drawPoint(corner.point.add(this.position), 'yellow') })
+    if (this.debug) { this.cornerList.forEach((corner) => { Render.drawPoint(corner.point.add(this.physics.position), 'yellow') }) }
   }
   //Corner End
   //Collision/Physics Start
@@ -138,7 +127,7 @@ class Region extends Quadtree {
   }
 
   getKeys(point) {
-    let originPoint = point.subtract(this.position)
+    let originPoint = point.subtract(this.physics.position);
     let keys = []; let badcount = 0; let offset = .001;
     for (let i = 0; i < 2; i++) {
       for (let j = 0; j < 2; j++) {
@@ -150,10 +139,7 @@ class Region extends Quadtree {
           try {
             let key = this.encodeKey(scaledX, scaledY, layer);
             let node = this.readNode(key);
-            if (node.type == 0) {
-              keys.push(key)
-              break
-            }
+            if (node.type == 0) { keys.push(key); break }
           } catch (error) { keys.push(undefined); badcount += 1; break }
         }
       }
@@ -163,19 +149,19 @@ class Region extends Quadtree {
   }
 
   pointCull(velocity) {
-    let cullSet = new Set();
+    let cullSet = new Set([0, 1, 2, 3]);
     if (velocity.x == 0 && velocity.y != 0) {
-      if (velocity.y < 0) { cullSet.add(0); cullSet.add(2) }
-      else if (velocity.y > 0) { cullSet.add(1); cullSet.add(3) }
+      if (velocity.y < 0) { cullSet.delete(1); cullSet.delete(3) }
+      else if (velocity.y > 0) { cullSet.delete(0); cullSet.delete(2) }
     }
     else if (velocity.x != 0 && velocity.y == 0) {
-      if (velocity.x < 0) { cullSet.add(0); cullSet.add(1) }
-      else if (velocity.x > 0) { cullSet.add(2); cullSet.add(3) }
+      if (velocity.x < 0) { cullSet.delete(2); cullSet.delete(3) }
+      else if (velocity.x > 0) { cullSet.delete(0); cullSet.delete(1) }
     }
-    else if (velocity.x < 0 && velocity.y < 0) { cullSet.add(0); cullSet.add(1); cullSet.add(2); }
-    else if (velocity.x < 0 && velocity.y > 0) { cullSet.add(0); cullSet.add(1); cullSet.add(3); }
-    else if (velocity.x > 0 && velocity.y < 0) { cullSet.add(0); cullSet.add(2); cullSet.add(3); }
-    else if (velocity.x > 0 && velocity.y > 0) { cullSet.add(1); cullSet.add(2); cullSet.add(3); }
+    else if (velocity.x < 0 && velocity.y < 0) { cullSet.delete(3) }
+    else if (velocity.x < 0 && velocity.y > 0) { cullSet.delete(2) }
+    else if (velocity.x > 0 && velocity.y < 0) { cullSet.delete(1) }
+    else if (velocity.x > 0 && velocity.y > 0) { cullSet.delete(0) }
     return cullSet
   }
 
@@ -221,7 +207,7 @@ class Region extends Quadtree {
     else if (Math.abs(slopeToCorner) < Math.abs(slope)) {
       hitPoint.add(new Vector(1 / slope * wallDistance.y, wallDistance.y, 0), true); hitWall.x = 0;
     }
-    Render.drawPoint(hitPoint, 'red'); Render.drawLine(startPoint, wallDistance, 'orange');
+    if (this.debug) { Render.drawPoint(hitPoint, 'red'); Render.drawLine(startPoint, wallDistance, 'orange'); }
     return new hitData(hitPoint, hitWall)
   }
 
@@ -264,8 +250,10 @@ class Region extends Quadtree {
     let cornerBox = cornerRegion.getBoxDimensions(cornerKey);
     let hitBox = hitRegion.getBoxDimensions(hitKey);
     let boxOffset = cornerBox.center.subtract(hitBox.center).abs();
-    Render.outlineBox(hitBox.position, hitBox.length, 'red');
-    Render.outlineBox(cornerBox.position, cornerBox.length, 'purple')
+    if (this.debug) {
+      Render.outlineBox(hitBox.position, hitBox.length, 'red');
+      Render.outlineBox(cornerBox.position, cornerBox.length, 'purple');
+    }
     if (boxOffset.x >= boxOffset.y) { truth.assign(true) }
     if (boxOffset.x <= boxOffset.y) { truth.assign(null, true) }
     if (truth.x == true && truth.y == true) {
@@ -283,13 +271,13 @@ class Region extends Quadtree {
     this.cornerList.forEach((corner) => { if (cullSet.has(corner.direction)) { culledCorners.push(corner) } })
     for (let i = 0; i < culledCorners.length; i++) {
       let corner = culledCorners[i];
-      let cornerPoint = corner.point.add(start)
+      let cornerPoint = corner.point.add(start);
       let hit = target.calcHit(cornerPoint, corner.direction, currentVelocity);
       //If hitting something I need to collide with
       if (hit != undefined && hit.key != undefined && target.readColType(hit.key) != 0) {
-        hit.distance = hit.point.subtract(cornerPoint)
+        hit.distance = hit.point.subtract(cornerPoint);
         let slide, updateX = false, updateY = false;
-        let wallHangCheck = this.wallHangCheck(corner.key, this, hit.key, target, currentVelocity)
+        let wallHangCheck = this.wallHangCheck(corner.key, this, hit.key, target, currentVelocity);
         if (hit.wall.x != 0 && hit.wall.y != 0) { slide = target.slideCheck(hit) } else { slide = new Vector(true, true, 3) }
         if (wallHangCheck.x && slide.x) { updateX = true } else { hit.wall.x = 0 }
         if (wallHangCheck.y && slide.y) { updateY = true } else { hit.wall.y = 0 }
@@ -303,18 +291,14 @@ class Region extends Quadtree {
   }
 
   moveWithCollisions(target) {
-    let foundWalls = new Vector(false, false, 3), done = false;
-    while ((!foundWalls.x || !foundWalls.y) && !done) {
-      let hit = this.checkCollision(this.position, this.velocity, target);
-      if (hit == undefined) {
-        this.position.add(this.velocity, true);
-        done = true;
-      }
+    let foundWalls = new Vector(false, false, 3);
+    while ((!foundWalls.x || !foundWalls.y)) {
+      let hit = this.checkCollision(this.physics.position, this.physics.velocity, target);
+      if (hit == undefined) { this.physics.updatePosition(); break } //Move normally
       else {
-        this.position.add(hit.distance, true);
-        this.velocity.subtract(hit.distance, true);
-        if (hit.wall.x != 0) { foundWalls.x = true; this.velocity.x = 0 }
-        if (hit.wall.y != 0) { foundWalls.y = true; this.velocity.y = 0 }
+        this.physics.applyPartialVelocity(hit.distance);
+        if (hit.wall.x != 0) { foundWalls.x = true; this.physics.velocity.x = 0 }
+        if (hit.wall.y != 0) { foundWalls.y = true; this.physics.velocity.y = 0 }
       }
     }
   }
