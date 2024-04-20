@@ -194,23 +194,21 @@ class Region extends Quadtree {
   }
 
   stepSquare(startPoint, velocity, key) {
-    let sign = velocity.sign(), flip = 1;
+    let flip = 1, hit = new hitData(startPoint.clone(), velocity.sign());
     if (key == undefined) { key = 1; flip = -1; } else if (this.readColType(key) != 0) { flip = -1 }
     let box = this.getBoxDimensions(key);
-    let halfLength = box.length.divideScalar(2);
-    let cornerPoint = box.center.add(halfLength.multiply(sign).multiplyScalar(flip))
-    let wallDistance = cornerPoint.subtract(startPoint); wallDistance.type = 1
-    let hitPoint = startPoint.clone(); let hitWall = sign;
-    let slope = velocity.slope(); let slopeToCorner = wallDistance.slope();
-    if (Math.abs(slopeToCorner) == Math.abs(slope)) { hitPoint.add(wallDistance, true) }
-    else if (Math.abs(slopeToCorner) > Math.abs(slope)) {
-      hitPoint.add(new Vector(wallDistance.x, slope * wallDistance.x, 0), true); hitWall.y = 0;
+    let directionPoint = box.center.add(box.length.divideScalar(2).multiply(hit.wall).multiplyScalar(flip))
+    let wallDistance = directionPoint.subtract(startPoint); wallDistance.type = 1
+    let slope = velocity.slope(); let slopeToCorner = Math.abs(wallDistance.slope());
+    if (slopeToCorner == Math.abs(slope)) { hit.point.add(wallDistance, true) }
+    else if (slopeToCorner > Math.abs(slope)) {
+      hit.point.add(new Vector(wallDistance.x, slope * wallDistance.x, 0), true); hit.wall.y = 0;
     }
-    else if (Math.abs(slopeToCorner) < Math.abs(slope)) {
-      hitPoint.add(new Vector(1 / slope * wallDistance.y, wallDistance.y, 0), true); hitWall.x = 0;
+    else if (slopeToCorner < Math.abs(slope)) {
+      hit.point.add(new Vector(1 / slope * wallDistance.y, wallDistance.y, 0), true); hit.wall.x = 0;
     }
-    if (this.debug) { Render.drawPoint(hitPoint, 'red'); Render.drawLine(startPoint, wallDistance, 'orange'); }
-    return new hitData(hitPoint, hitWall)
+    if (this.debug) { Render.drawPoint(hit.point, 'red'); Render.drawLine(startPoint, wallDistance, 'orange'); }
+    return hit
   }
 
   calcHit(cornerPos, direction, velocity) {
@@ -247,7 +245,7 @@ class Region extends Quadtree {
     return result
   }
 
-  wallHangCheck(cornerKey, cornerRegion, hitKey, hitRegion, velocity) {
+  wallHangCheck(cornerKey, cornerRegion, hitKey, hitRegion) {
     let truth = new Vector(false, false, 3);
     let cornerBox = cornerRegion.getBoxDimensions(cornerKey);
     let hitBox = hitRegion.getBoxDimensions(hitKey);
@@ -258,10 +256,6 @@ class Region extends Quadtree {
     }
     if (boxOffset.x >= boxOffset.y) { truth.assign(true) }
     if (boxOffset.x <= boxOffset.y) { truth.assign(null, true) }
-    if (truth.x == true && truth.y == true) {
-      if (Math.abs(velocity.x) > Math.abs(velocity.y)) { truth.x = false }
-      else if (Math.abs(velocity.x) < Math.abs(velocity.y)) { truth.y = false }
-    }
     return truth
   }
 
@@ -279,7 +273,7 @@ class Region extends Quadtree {
       if (hit != undefined && hit.key != undefined && target.readColType(hit.key) != 0) {
         hit.distance = hit.point.subtract(cornerPoint);
         let slide, updateX = false, updateY = false;
-        let wallHangCheck = this.wallHangCheck(corner.key, this, hit.key, target, currentVelocity);
+        let wallHangCheck = this.wallHangCheck(corner.key, this, hit.key, target);
         if (hit.wall.x != 0 && hit.wall.y != 0) { slide = target.slideCheck(hit) } else { slide = new Vector(true, true, 3) }
         if (wallHangCheck.x && slide.x) { updateX = true } else { hit.wall.x = 0 }
         if (wallHangCheck.y && slide.y) { updateY = true } else { hit.wall.y = 0 }
