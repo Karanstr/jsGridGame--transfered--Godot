@@ -213,16 +213,16 @@ class Region extends Quadtree {
 
   calcHit(cornerPos, direction, velocity) {
     let distance = velocity.length(); if (distance == 0) { return }
-    let traveled = 0, point = cornerPos, hit = new hitData(), end = false;
+    let traveled = 0, point = cornerPos, hit = new hitData();
     hit.keys = this.getKeys(point);
     hit.key = this.keyCull(hit.keys, direction, velocity);
-    while (traveled < distance && end == false) {
+    while (distance > traveled) {
       hit = this.stepSquare(point, velocity, hit.key);
       hit.keys = this.getKeys(hit.point);
-      hit.key = this.keyCull(hit.keys, direction, velocity)
+      hit.key = this.keyCull(hit.keys, direction, velocity);
       if (hit.key == undefined) { traveled = distance } //Hitting Edge of Region
       else {
-        if (this.readColType(hit.key) != 0) { end = true } //Hitting Wall
+        if (this.readColType(hit.key) != 0) { break } //Hitting Wall
         else {
           traveled += hit.point.subtract(point).length();
           point = hit.point;
@@ -283,7 +283,8 @@ class Region extends Quadtree {
         if (wallHangCheck.y && slide.y) { updateY = true } else { hit.wall.y = 0 }
         //If collision is valid, check if it's shorter than current best alternative
         if ((updateX || updateY) && hit.distance.length() < currentVelocity.length()) {
-          if (hit.distance.length() == 0) { return hit } else { finalHit = hit }
+          currentVelocity = hit.distance
+          if (hit.distance.length() < .001) { return hit } else { finalHit = hit }
         }
       }
     }
@@ -292,7 +293,9 @@ class Region extends Quadtree {
 
   moveWithCollisions(target) {
     let foundWalls = new Vector(false, false, 3);
-    while ((!foundWalls.x || !foundWalls.y)) {
+    let reps = 0;
+    while ((!foundWalls.x || !foundWalls.y) && reps < 2) {
+      reps += 1;
       let hit = this.checkCollision(this.physics.position, this.physics.velocity, target);
       if (hit == undefined) { this.physics.updatePosition(); break } //Move normally
       else {
