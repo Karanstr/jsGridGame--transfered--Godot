@@ -295,11 +295,9 @@ class Region extends Quadtree {
 
   moveWithCollisions(target) {
     let foundWalls = new Vector(false, false, 3);
-    let reps = 0;
-    while ((!foundWalls.x || !foundWalls.y) && reps < 2) {
-      reps += 1;
+    while ((!foundWalls.x || !foundWalls.y)) {
       let hit = this.checkCollision(this.physics.position, this.physics.velocity, target);
-      if (hit == undefined) { this.physics.updatePosition(); break } //Move normally
+      if (hit == undefined || (hit.wall.x == 0 && hit.wall.y == 0)) { this.physics.updatePosition(); break } //Move normally
       else {
         this.physics.applyPartialVelocity(hit.distance);
         if (hit.wall.x != 0) { foundWalls.x = true; this.physics.velocity.x = 0 }
