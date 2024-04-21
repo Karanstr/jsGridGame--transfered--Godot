@@ -280,7 +280,7 @@ class Region extends Quadtree {
         //If collision is valid, check if it's shorter than current best alternative
         if ((updateX || updateY) && hit.distance.length() < currentVelocity.length()) {
           currentVelocity = hit.distance
-          if (hit.distance.length() < .001) { return hit } else { finalHit = hit }
+          if (hit.distance.length() == 0) { return hit } else { finalHit = hit }
         }
       }
     }
