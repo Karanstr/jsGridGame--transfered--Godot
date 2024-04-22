@@ -680,10 +680,10 @@
         let slope = velocity.slope(); let slopeToCorner = Math.abs(wallDistance.slope());
         if (slopeToCorner == Math.abs(slope)) { hit.point.add(wallDistance, true) }
         else if (slopeToCorner > Math.abs(slope)) {
-          hit.point.add(new Vector(wallDistance.x, slope * wallDistance.x, 0), true); hit.wall.y = 0;
+          hit.point.add(new Vector2(wallDistance.x, slope * wallDistance.x, 0), true); hit.wall.y = 0;
         }
         else if (slopeToCorner < Math.abs(slope)) {
-          hit.point.add(new Vector(1 / slope * wallDistance.y, wallDistance.y, 0), true); hit.wall.x = 0;
+          hit.point.add(new Vector2(1 / slope * wallDistance.y, wallDistance.y, 0), true); hit.wall.x = 0;
         }
         if (this.debug) { Render.drawPoint(hit.point, 'red'); Render.drawLine(startPoint, wallDistance, 'orange'); }
         return hit
@@ -715,7 +715,7 @@
       //Collision Safety Checks
       slideCheck(hitData) {
         //Checks if a corner should be collided with or if it should be slid past
-        let xKey, yKey; let result = new Vector(true, true, 3)
+        let xKey, yKey; let result = new Vector2(true, true, 3)
         if (hitData.wall.x == 1 && hitData.wall.y == 1) { xKey = hitData.keys[1]; yKey = hitData.keys[2]; }
         else if (hitData.wall.x == -1 && hitData.wall.y == 1) { xKey = hitData.keys[3]; yKey = hitData.keys[0]; }
         else if (hitData.wall.x == 1 && hitData.wall.y == -1) { xKey = hitData.keys[0]; yKey = hitData.keys[3]; }
@@ -728,7 +728,7 @@
 
       wallHangCheck(cornerKey, cornerRegion, hitKey, hitRegion) {
         //Checks if a face should be collided with
-        let truth = new Vector(false, false, 3);
+        let truth = new Vector2(false, false, 3);
         let cornerBox = cornerRegion.getBoxDimensions(cornerKey);
         let hitBox = hitRegion.getBoxDimensions(hitKey);
         let boxOffset = cornerBox.center.subtract(hitBox.center).abs();
@@ -756,7 +756,7 @@
             hit.distance = hit.point.subtract(cornerPoint);
             let slide, updateX = false, updateY = false;
             let wallHangCheck = this.wallHangCheck(corner.key, this, hit.key, target);
-            if (hit.wall.x != 0 && hit.wall.y != 0) { slide = target.slideCheck(hit) } else { slide = new Vector(true, true, 3) }
+            if (hit.wall.x != 0 && hit.wall.y != 0) { slide = target.slideCheck(hit) } else { slide = new Vector2(true, true, 3) }
             if (wallHangCheck.x && slide.x) { updateX = true } else { hit.wall.x = 0 }
             if (wallHangCheck.y && slide.y) { updateY = true } else { hit.wall.y = 0 }
             //If collision is valid, check if it's shorter than current best alternative
@@ -771,7 +771,7 @@
 
       moveWithCollisions(target) {
         //Checks collisions in the xy direction, then in either the x or y direction depending on velocity
-        let foundWalls = new Vector(false, false, 3);
+        let foundWalls = new Vector2(false, false, 3);
         while ((!foundWalls.x || !foundWalls.y)) {
           let hit = this.checkCollision(this.physics.position, this.physics.velocity, target);
           if (hit == undefined || (hit.wall.x == 0 && hit.wall.y == 0)) { this.physics.updatePosition(); break } //Move normally

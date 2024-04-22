@@ -67,8 +67,8 @@ class Region extends Quadtree {
     Render.outlineBox(this.physics.position, this.length, 'black');
     keys[1].forEach((branch) => {
       let box = this.getBoxDimensions(branch);
-      Render.drawLine(new Vector2(box.position.x, box.center.y, 0), new Vector2(box.length.x, 0, 1), 'black');
-      Render.drawLine(new Vector2(box.center.x, box.position.y, 0), new Vector2(0, box.length.y, 1), 'black');
+      Render.drawLine(new Vector(box.position.x, box.center.y, 0), new Vector(box.length.x, 0, 1), 'black');
+      Render.drawLine(new Vector(box.center.x, box.position.y, 0), new Vector(0, box.length.y, 1), 'black');
     })
     //}
   }
@@ -120,8 +120,8 @@ class Region extends Quadtree {
         let box = this.getBoxDimensions(key), corners = this.getCorners(key);
         box.position.subtract(this.physics.position, true);
         if (corners.has(0)) { this.cornerList.push(new corner(box.position, key, 0)) }
-        if (corners.has(1)) { this.cornerList.push(new corner(new Vector2(box.position.x, box.position.y + box.length.y, 0), key, 1)) }
-        if (corners.has(2)) { this.cornerList.push(new corner(new Vector2(box.position.x + box.length.x, box.position.y, 0), key, 2)) }
+        if (corners.has(1)) { this.cornerList.push(new corner(new Vector(box.position.x, box.position.y + box.length.y, 0), key, 1)) }
+        if (corners.has(2)) { this.cornerList.push(new corner(new Vector(box.position.x + box.length.x, box.position.y, 0), key, 2)) }
         if (corners.has(3)) { this.cornerList.push(new corner(box.position.add(box.length), key, 3)) }
       }
     })
