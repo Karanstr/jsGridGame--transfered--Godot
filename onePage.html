@@ -773,7 +773,7 @@
       moveWithCollisions(target) {
         let startVelocity = this.physics.velocity.clone();
         //Checks collisions in the xy direction, then in either the x or y direction depending on velocity
-        let foundWalls = new Vector(false, false, 3);
+        let foundWalls = new Vector2(false, false, 3);
         while ((!foundWalls.x || !foundWalls.y)) {
           let hit = this.checkCollision(this.physics.position, this.physics.velocity, target);
           if (hit == undefined || (hit.wall.x == 0 && hit.wall.y == 0)) { this.physics.updatePosition(); break } //Move normally
