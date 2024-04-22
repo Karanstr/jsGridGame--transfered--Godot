@@ -311,6 +311,7 @@ class Region extends Quadtree {
   }
 
   moveWithCollisions(target) {
+    let startVelocity = this.physics.velocity.clone();
     //Checks collisions in the xy direction, then in either the x or y direction depending on velocity
     let foundWalls = new Vector(false, false, 3);
     while ((!foundWalls.x || !foundWalls.y)) {
@@ -318,10 +319,11 @@ class Region extends Quadtree {
       if (hit == undefined || (hit.wall.x == 0 && hit.wall.y == 0)) { this.physics.updatePosition(); break } //Move normally
       else {
         this.physics.applyPartialVelocity(hit.distance);
-        if (hit.wall.x != 0) { foundWalls.x = true; this.physics.velocity.x = 0 }
-        if (hit.wall.y != 0) { foundWalls.y = true; this.physics.velocity.y = 0 }
+        if (hit.wall.x != 0) { foundWalls.x = true; this.physics.velocity.x = 0; startVelocity.x = 0; }
+        if (hit.wall.y != 0) { foundWalls.y = true; this.physics.velocity.y = 0; startVelocity.y = 0; }
       }
     }
+    this.physics.velocity = startVelocity;
   }
 
   //Collision/Physics End

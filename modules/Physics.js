@@ -31,7 +31,8 @@ class PhysicsObject {
   applyPartialVelocity(velocity) {
     //Assumes this is being used to step through collisions and as such
     //Expects velocity to end up at 0 (Probably a bad way to do it)
-    //Need to look into this at some point
+    //Velocity must be set back to original at some point or else
+    //Sad things happen
     this.position.add(velocity, true);
     this.velocity.subtract(velocity, true);
   }
