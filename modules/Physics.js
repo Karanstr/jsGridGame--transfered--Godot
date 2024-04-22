@@ -9,7 +9,7 @@ class PhysicsObject {
     this.rotation = 0;
     this.velocity = new Vector2(0, 0, 1)
     this.acceleration = new Vector2(0, 0, 1)
-    this.dragMultiplier = drag;
+    this.decay = drag;
 
   }
 
@@ -19,13 +19,19 @@ class PhysicsObject {
 
   updateVelocity() {
     this.velocity.add(this.acceleration, true);
-    this.velocity.multiplyScalar(this.dragMultiplier, true);
+    //Easy drag until I think of a better solution
+    this.velocity.multiplyScalar(this.decay, true);
+    //Bring axis to rest after it's moving by less than .001 (units?)
     if (Math.abs(this.velocity.x) < .001) { this.velocity.x = 0 }
     if (Math.abs(this.velocity.y) < .001) { this.velocity.y = 0 }
+    //Acceleration has been applied, now it's set back to 0
     this.acceleration.assign(0, 0);
   }
 
   applyPartialVelocity(velocity) {
+    //Assumes this is being used to step through collisions and as such
+    //Expects velocity to end up at 0 (Probably a bad way to do it)
+    //Need to look into this at some point
     this.position.add(velocity, true);
     this.velocity.subtract(velocity, true);
   }
