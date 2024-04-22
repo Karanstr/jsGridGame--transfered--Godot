@@ -317,7 +317,9 @@ class blockMap {
 
   getBlock(id) { return this.blockList.get(id) }
 
-  addBlock(id, color, collisionType) { this.blockList.set(id, new Block(color, collisionType)) }
+  addBlock(id, color, collisionType) { 
+    this.blockList.set(id, new Block(color, collisionType)) 
+  }
 
   import() {
 
