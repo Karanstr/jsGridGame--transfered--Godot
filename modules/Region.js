@@ -52,26 +52,24 @@ class Region extends Quadtree {
 
   Render() {
     //Draws each square
-    //Maybe take out and put in dedicated rendering class?
-    //Maybe use LODS to draw less squares?
-    let keys = this.getKids(1);
-    keys[0].forEach((leaf) => {
-      let node = this.readNode(leaf);
-      if (node.data != 0) {
-        let box = this.getBoxDimensions(leaf);
+    let allNodes = this.getKids(1), nodes = [...allNodes[1], ...allNodes[0]];
+    nodes.forEach((key) => {
+      let node = this.readNode(key);
+      if (key == 1 || node.data != this.readNode(key >> 2).data) {
+        let box = this.getBoxDimensions(key);
         let color = this.blockMap.getBlock(node.data).color;
-        Render.drawBox(box.position, box.length, color);
+        Render.drawBox(box.position, box.length, color); 
       }
     })
-    //if (this.debug) {
-    //Draw all grids
-    Render.outlineBox(this.physics.position, this.length, 'black');
-    keys[1].forEach((branch) => {
-      let box = this.getBoxDimensions(branch);
-      Render.drawLine(new Vector(box.position.x, box.center.y, 0), new Vector(box.length.x, 0, 1), 'black');
-      Render.drawLine(new Vector(box.center.x, box.position.y, 0), new Vector(0, box.length.y, 1), 'black');
-    })
-    //}
+    if (this.debug) {
+      //Draw all grids
+      Render.outlineBox(this.physics.position, this.length, 'black');
+      allNodes[1].forEach((branch) => {
+        let box = this.getBoxDimensions(branch);
+        Render.drawLine(new Vector(box.position.x, box.center.y, 0), new Vector(box.length.x, 0, 1), 'black');
+        Render.drawLine(new Vector(box.center.x, box.position.y, 0), new Vector(0, box.length.y, 1), 'black');
+      })
+    }
   }
 
   Draw(func, key, color) {
