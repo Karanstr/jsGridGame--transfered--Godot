@@ -1,0 +1,5 @@
+Don't apply some boring dampening factor, give each block a friction/resistance value and 
+as you step through the boxes take note of the friction value and the distance travelled,
+then apply the total dampenned to velocity
+Remember this means I'll have to do a bunch of work because 
+you can be in multiple blocks at once

@@ -32,6 +32,7 @@ class hitData {
 //Real Deal
 class Region extends Quadtree {
   constructor(x, y, width, height, blockMap) {
+    //Figure out how to assign a default value better?
     super(5, 0);
     this.physics = new PhysObject(x, y, .9);
     this.length = new Vector(width, height, 1);
@@ -277,7 +278,7 @@ class Region extends Quadtree {
       Render.outlineBox(cornerBox.position, cornerBox.length, 'purple');
     }
     if (boxOffset.x >= boxOffset.y) { truth.assign(true) }
-    if (boxOffset.x <= boxOffset.y) { truth.assign(null, true) }
+    if (boxOffset.x <= boxOffset.y) { truth.assign(undefined, true) }
     return truth
   }
 
@@ -338,9 +339,8 @@ class Block {
   }
 }
 class blockMap {
-  constructor(nullVal) {
+  constructor() {
     this.blockList = new Map();
-    this.addBlock(0, nullVal, 0);
   }
 
   getBlock(id) { return this.blockList.get(id) }
