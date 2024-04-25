@@ -20,7 +20,6 @@ window.p.findCorners();
 
 //Order rendering should be done in
 let list = [window.a, window.p];
-
 window.currentMove = window.p;
 window.currentEdit = window.a;
 currentEdit = window.currentEdit;
@@ -73,8 +72,9 @@ onkeydown = (event) => { keyMove.add(event.key) }
 onkeyup = (event) => { keyRemove.add(event.key) }
 window.speed = .25;
 window.gravity = new Vector(0, .3, 1);
+var gameID;
 
-function gameStep() {
+window.gameStep = function () {
   let debugCheck = document.getElementById("debug").checked;
   if (debugCheck == 0) { window.assignDebug(false) } else { window.assignDebug(true) }
   Render.drawBox(new Vector(0, 0, 0), new Vector(canData.right, canData.bottom, 1), 'white');
@@ -94,11 +94,9 @@ function gameStep() {
   p.physics.updateVelocity();
   p.moveWithCollisions(a);
 }
-
-var game = setInterval(gameStep, 1000 / 60);
-
-window.changeInterval = function (frequency) {
-  if (typeof frequency != 'number') {throw " That's not a number" }
-  clearInterval(game);
-  if (frequency != 0) { game = setInterval(gameStep, frequency) }
+window.gameSpeed = function (fps) {
+  if (typeof fps != 'number') {throw " That's not a number" }
+  clearInterval(gameID);
+  if (fps != 0) { gameID = setInterval(window.gameStep, 1000/fps) }
 }
+window.gameSpeed(60);
