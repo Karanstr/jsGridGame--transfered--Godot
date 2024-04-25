@@ -324,6 +324,8 @@ class Region extends Quadtree {
       }
     }
     this.physics.velocity = startVelocity;
+    this.physics.position.x = Number(this.physics.position.x.toFixed(3));
+    this.physics.position.y = Number(this.physics.position.y.toFixed(3));
   }
 
   //Collision/Physics End
