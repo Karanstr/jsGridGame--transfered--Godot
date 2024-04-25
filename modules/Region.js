@@ -142,7 +142,7 @@ class Region extends Quadtree {
     //Takes an x, y coordiate-pair
     //Returns four possible keys that pair might fall into
     let originPoint = point.subtract(this.physics.position);
-    let keys = []; let badcount = 0; let offset = .001;
+    let keys = []; let badcount = 0; let offset = .00001;
     for (let i = 0; i < 2; i++) {
       for (let j = 0; j < 2; j++) {
         for (let layer = 0; layer < this.depth; layer++) {
@@ -324,8 +324,8 @@ class Region extends Quadtree {
       }
     }
     this.physics.velocity = startVelocity;
-    this.physics.position.x = Number(this.physics.position.x.toFixed(3));
-    this.physics.position.y = Number(this.physics.position.y.toFixed(3));
+    this.physics.position.x = Number(this.physics.position.x.toFixed(6));
+    this.physics.position.y = Number(this.physics.position.y.toFixed(6));
   }
 
   //Collision/Physics End
