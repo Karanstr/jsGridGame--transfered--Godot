@@ -7,7 +7,7 @@ window.Render = Render;
 window.Vector = Vector;
 
 window.a = new Region(80, 80, 320, 320, new blockMap());
-window.a.blockMap.addBlock(0, '#ffffff', 0);
+window.a.blockMap.addBlock(0, '#0000ff', 0);
 window.a.blockMap.addBlock(1, '#777777', 1);
 window.a.Load('8401 8411 9081 8441 8451 8481 84a1 93d1 93e1 93f1 8501 8511 8541 95d1 95e1 95f1 85d1 9791 85f1 8601 8621 9911 9921 9931 9941 8661 8671 86e1 86f1 9c51 8721 8731 9d11 8751 9d81 9da1 8771 87a1 87b1 9f21 9f31 9f61 87e1 87f1');
 window.a.findCorners();
@@ -66,23 +66,24 @@ onmousedown = (mouse) => {
   }
 }
 
-let keyMove = new Set();
+window.keyMove = new Set();
+let keyMove = window.keyMove;
 let keyRemove = new Set();
 onkeydown = (event) => { keyMove.add(event.key) }
 onkeyup = (event) => { keyRemove.add(event.key) }
 window.speed = .25;
 window.gravity = new Vector(0, .3, 1);
 
-const game = setInterval(() => {
+function gameStep() {
   let debugCheck = document.getElementById("debug").checked;
   if (debugCheck == 0) { window.assignDebug(false) } else { window.assignDebug(true) }
   Render.drawBox(new Vector(0, 0, 0), new Vector(canData.right, canData.bottom, 1), 'white');
-  //if (keyMove.has('w') && keyMove.has('s')) { }
-  if (keyMove.has('w')) { currentMove.physics.applyForce(new Vector(0, 2 * -window.speed)) }
-  //else if (keyMove.has('s')) { currentMove.physics.applyForce(new Vector(0, window.speed)) }
-  if (keyMove.has('a') && keyMove.has('d')) { }
-  else if (keyMove.has('a')) { currentMove.physics.applyForce(new Vector(-window.speed, 0)) }
-  else if (keyMove.has('d')) { currentMove.physics.applyForce(new Vector(window.speed, 0)) }
+  if (keyMove.length != 0) {
+    if (keyMove.has('w')) { currentMove.physics.applyForce(new Vector(0, 2 * -window.speed)) }
+    if (keyMove.has('a') && keyMove.has('d')) { }
+    else if (keyMove.has('a')) { currentMove.physics.applyForce(new Vector(-window.speed, 0)) }
+    else if (keyMove.has('d')) { currentMove.physics.applyForce(new Vector(window.speed, 0)) }
+  }
   currentMove.physics.applyForce(window.gravity);
   keyRemove.forEach((key) => { keyMove.delete(key) })
   keyRemove.clear();
@@ -92,4 +93,12 @@ const game = setInterval(() => {
   })
   p.physics.updateVelocity();
   p.moveWithCollisions(a);
-}, 1000 / 60);
+}
+
+var game = setInterval(gameStep, 1000 / 60);
+
+window.changeInterval = function (frequency) {
+  if (typeof frequency != 'number') {throw " That's not a number" }
+  clearInterval(game);
+  if (frequency != 0) { game = setInterval(gameStep, frequency) }
+}
