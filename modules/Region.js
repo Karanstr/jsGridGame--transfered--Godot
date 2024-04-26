@@ -236,10 +236,10 @@ class Region extends Quadtree {
     hit.colType = this.readColType(hit.key);
   }
 
-  calcHit(cornerPos, direction, velocity) {
+  calcHit(point, direction, velocity) {
     //Steps through each square in a line until a solid square or boundary wall is hit
-    let distance = velocity.length(), searching = true; if (distance == 0) { return }
-    let traveled = 0, point = cornerPos.clone(), hit = new hitData(point, velocity.sign());
+    let distance = velocity.length(), searching = true; if (velocity.length() == 0) { return }
+    let traveled = 0, hit = new hitData(point, velocity.sign());
     this.fillHit(hit, direction, velocity);
     //While not hitting a solid block, region boundary, and haven't check full path
     while (searching && traveled < distance && hit.colType != 1) {
@@ -263,9 +263,8 @@ class Region extends Quadtree {
     else if (hitData.wall.x == -1 && hitData.wall.y == 1) { xKey = hitData.keys[3]; yKey = hitData.keys[0]; }
     else if (hitData.wall.x == 1 && hitData.wall.y == -1) { xKey = hitData.keys[0]; yKey = hitData.keys[3]; }
     else if (hitData.wall.x == -1 && hitData.wall.y == -1) { xKey = hitData.keys[2]; yKey = hitData.keys[1]; }
-
-    if (xKey != undefined && this.readColType(xKey) != 0) { result.x = false }
-    if (yKey != undefined && this.readColType(yKey) != 0) { result.y = false }
+    if (xKey != undefined && this.readColType(xKey) == 1) { result.x = false }
+    if (yKey != undefined && this.readColType(yKey) == 1) { result.y = false }
     return result
   }
 
@@ -296,7 +295,7 @@ class Region extends Quadtree {
       let cornerPoint = corner.point.add(start);
       let hit = target.calcHit(cornerPoint, corner.direction, currentVelocity);
       //If hitting something I need to collide with
-      if (hit != undefined && hit.key != undefined && target.readColType(hit.key) != 0) {
+      if (hit != undefined && hit.key != undefined && hit.colType == 1) {
         hit.distance = hit.point.subtract(cornerPoint);
         let slide, updateX = false, updateY = false;
         let wallHangCheck = this.wallHangCheck(corner.key, this, hit.key, target);
