@@ -21,11 +21,12 @@ class corner {
   }
 }
 class hitData {
-  constructor(point, wall, key, keys) {
+  constructor(point, wall) {
     this.point = point;
     this.wall = wall; // Rename to direction?
-    this.key = key;
-    this.keys = keys;
+    this.key;
+    this.keys;
+    this.colType;
     this.distance;
   }
 }
@@ -134,6 +135,7 @@ class Region extends Quadtree {
   readColType(key) {
     //Reads the blockmap for the data stored in node of key
     //Returns collisiontype of that node
+    if (key == undefined) { return }
     return this.blockMap.getBlock(this.readNode(key).data).collisionType
   }
 
@@ -212,7 +214,7 @@ class Region extends Quadtree {
     //Finds the point a velocity will cause the startingPoint to collide to within a key
     //Math all figured out here: https://www.desmos.com/calculator/gkqzdh2vbk
     let flip = 1, hit = new hitData(startPoint.clone(), velocity.sign());
-    if (key == undefined) { key = 1; flip = -1; } else if (this.readColType(key) != 0) { flip = -1 }
+    if (key == undefined) { key = 1; flip = -1; }
     let box = this.getBoxDimensions(key);
     let directionPoint = box.center.add(box.length.divideScalar(2).multiply(hit.wall).multiplyScalar(flip))
     let wallDistance = directionPoint.subtract(startPoint); wallDistance.type = 1
@@ -228,24 +230,26 @@ class Region extends Quadtree {
     return hit
   }
 
-  calcHit(cornerPos, direction, velocity) {
-    //Calls stepSquare each time a new square is hit until 
-    //a collidable square is hit or velocity has been traveled
-    let distance = velocity.length(); if (distance == 0) { return }
-    let traveled = 0, point = cornerPos, hit = new hitData();
-    hit.keys = this.getKeys(point);
+  fillHit(hit, direction, velocity) {
+    hit.keys = this.getKeys(hit.point);
     hit.key = this.keyCull(hit.keys, direction, velocity);
-    while (distance > traveled) {
-      hit = this.stepSquare(point, velocity, hit.key);
-      hit.keys = this.getKeys(hit.point);
-      hit.key = this.keyCull(hit.keys, direction, velocity);
-      if (hit.key == undefined) { traveled = distance } //Hitting Edge of Region
-      else {
-        if (this.readColType(hit.key) != 0) { break } //Hitting Wall
-        else {
+    hit.colType = this.readColType(hit.key);
+  }
+
+  calcHit(cornerPos, direction, velocity) {
+    //Steps through each square in a line until a solid square or boundary wall is hit
+    let distance = velocity.length(), searching = true; if (distance == 0) { return }
+    let traveled = 0, point = cornerPos.clone(), hit = new hitData(point, velocity.sign());
+    this.fillHit(hit, direction, velocity);
+    //While not hitting a solid block, region boundary, and haven't check full path
+    while (searching && traveled < distance && hit.colType != 1) {
+      hit = this.stepSquare(hit.point, velocity, hit.key);
+      this.fillHit(hit, direction, velocity);
+      switch (hit.colType) {
+        case undefined: searching = false; break //Hitting region boundary
+        default: //Step to the next block
           traveled += hit.point.subtract(point).length();
-          point = hit.point;
-        }
+          point = hit.point.clone();
       }
     }
     return hit
@@ -326,7 +330,6 @@ class Region extends Quadtree {
     this.physics.position.x = Number(this.physics.position.x.toFixed(6));
     this.physics.position.y = Number(this.physics.position.y.toFixed(6));
   }
-
   //Collision/Physics End
 }
 
@@ -334,6 +337,7 @@ class Block {
   constructor(color, collisionType) {
     this.color = color;
     this.collisionType = collisionType;
+    this.resistanceFactor;
   }
 }
 class blockMap {
