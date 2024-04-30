@@ -236,23 +236,6 @@ class Region extends Quadtree {
     hit.colType = this.readColType(hit.key);
   }
 
-  calcHiter(point, direction, velocity) {
-    let remainingVelocity = velocity.clone();
-    let search = true, hit = new hitData(point, velocity.sign);
-    while (remainingVelocity.length() != 0) {
-      hit = this.stepSquare(hit.point, currentVelocity, hit.key);
-      this.fillHit(hit, direction, currentVelocity);
-      hit.distance = hit.point.subtract(point);
-      let resistance = 0;
-      if (hit.colType == undefined) { break }
-      else if (hit.colType == 1) {resistance = 0}
-      else if (hit.colType == 0) {resistance = .9}
-      currentVelocity.multiplyScalar(resistance, true);
-      
-    }
-    return hit
-  }
-
   calcHit(point, direction, velocity) {
     //Steps through each square in a line until a solid square or boundary wall is hit
     let distance = velocity.length(), searching = true; if (velocity.length() == 0) { return }
@@ -302,7 +285,6 @@ class Region extends Quadtree {
 
   //Collision Again
   checkCollision(start, velocity, target) {
-    //Compares the solutions found by each useful corner, returns the shortest
     let finalHit;
     let currentVelocity = velocity.clone();
     let cullSet = this.pointCull(velocity), culledCorners = [];
@@ -311,15 +293,13 @@ class Region extends Quadtree {
       let corner = culledCorners[i];
       let cornerPoint = corner.point.add(start);
       let hit = target.calcHit(cornerPoint, corner.direction, currentVelocity);
-      //If hitting something I need to collide with
-      if (hit != undefined && hit.key != undefined && hit.colType == 1) {
+      if (hit != undefined && hit.colType == 1) {
         hit.distance = hit.point.subtract(cornerPoint);
         let slide, updateX = false, updateY = false;
         let wallHangCheck = this.wallHangCheck(corner.key, this, hit.key, target);
         if (hit.wall.x != 0 && hit.wall.y != 0) { slide = target.slideCheck(hit) } else { slide = new Vector(true, true, 3) }
         if (wallHangCheck.x && slide.x) { updateX = true } else { hit.wall.x = 0 }
         if (wallHangCheck.y && slide.y) { updateY = true } else { hit.wall.y = 0 }
-        //If collision is valid, check if it's shorter than current best alternative
         if ((updateX || updateY) && hit.distance.length() < currentVelocity.length()) {
           currentVelocity = hit.distance;
           if (hit.distance.length() == 0) { return hit } else { finalHit = hit }
