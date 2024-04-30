@@ -3,3 +3,10 @@ as you step through the boxes take note of the friction value and the distance t
 then apply the total dampenned to velocity
 Remember this means I'll have to do a bunch of work because 
 you can be in multiple blocks at once
+
+resistanceFactor = new Vector2(x, y, 2) 
+blockLength.multiply(resistanceFactor) = EFectiveDistance
+delta.divide(EFD) = travelRatio
+if travelRatio.x <= 1, all x is used up, do not keep searching. Move velocity.x * travelRatio.x
+if travelRatio.x > 1, velocity remains, continue search. Move delta.x, update velocity.x - EFD.x
+//Do the same with y's

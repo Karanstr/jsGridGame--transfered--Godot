@@ -27,7 +27,7 @@ class hitData {
     this.key;
     this.keys;
     this.colType;
-    this.distance;
+    this.distance = 0;
   }
 }
 //Real Deal
@@ -236,6 +236,23 @@ class Region extends Quadtree {
     hit.colType = this.readColType(hit.key);
   }
 
+  calcHiter(point, direction, velocity) {
+    let remainingVelocity = velocity.clone();
+    let search = true, hit = new hitData(point, velocity.sign);
+    while (remainingVelocity.length() != 0) {
+      hit = this.stepSquare(hit.point, currentVelocity, hit.key);
+      this.fillHit(hit, direction, currentVelocity);
+      hit.distance = hit.point.subtract(point);
+      let resistance = 0;
+      if (hit.colType == undefined) { break }
+      else if (hit.colType == 1) {resistance = 0}
+      else if (hit.colType == 0) {resistance = .9}
+      currentVelocity.multiplyScalar(resistance, true);
+      
+    }
+    return hit
+  }
+
   calcHit(point, direction, velocity) {
     //Steps through each square in a line until a solid square or boundary wall is hit
     let distance = velocity.length(), searching = true; if (velocity.length() == 0) { return }
@@ -304,7 +321,7 @@ class Region extends Quadtree {
         if (wallHangCheck.y && slide.y) { updateY = true } else { hit.wall.y = 0 }
         //If collision is valid, check if it's shorter than current best alternative
         if ((updateX || updateY) && hit.distance.length() < currentVelocity.length()) {
-          currentVelocity = hit.distance
+          currentVelocity = hit.distance;
           if (hit.distance.length() == 0) { return hit } else { finalHit = hit }
         }
       }

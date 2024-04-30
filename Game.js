@@ -7,7 +7,7 @@ window.Render = Render;
 window.Vector = Vector;
 
 window.a = new Region(80, 80, 320, 320, new blockMap());
-window.a.blockMap.addBlock(0, '#0000ff', 0);
+window.a.blockMap.addBlock(0, '#ADD8E6', 0);
 window.a.blockMap.addBlock(1, '#777777', 1);
 window.a.Load('8401 8411 9081 8441 8451 8481 84a1 93d1 93e1 93f1 8501 8511 8541 95d1 95e1 95f1 85d1 9791 85f1 8601 8621 9911 9921 9931 9941 8661 8671 86e1 86f1 9c51 8721 8731 9d11 8751 9d81 9da1 8771 87a1 87b1 9f21 9f31 9f61 87e1 87f1');
 window.a.findCorners();
