@@ -43,6 +43,10 @@ class Vector2 {
     let newVect = new Vector2(this.x / scalar, this.y / scalar, this.type)
     if (mutate) {this.assign(newVect.x, newVect.y)} else {return newVect}
   }
+  raise(degree, mutate) {
+    let newVect = new Vector2(this.x**degree, this.y**degree, this.type)
+    if (mutate) {this.assign(newVect.x, newVect.y)} else {return newVect}
+  }
   invert(mutate) {
     if (mutate) { this.multiplyScalar(-1, true) } else { return this.multiplyScalar(-1) }
   }
