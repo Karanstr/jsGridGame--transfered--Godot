@@ -14,14 +14,14 @@ class Vector2 {
   }
 
   assign(x, y, type) {
-    if (x != null) {this.x = x}
-    if (y != null) {this.y = y}
-    if (type != null) {this.type = type}
+    if (x != null) { this.x = x }
+    if (y != null) { this.y = y }
+    if (type != null) { this.type = type }
   }
 
   add(vector, mutate) {
     let newVect = new Vector2(this.x + vector.x, this.y + vector.y, this.type)
-    if (mutate) { this.assign(newVect.x, newVect.y)} else { return newVect }
+    if (mutate) { this.assign(newVect.x, newVect.y) } else { return newVect }
   }
   subtract(vector, mutate) {
     let newVect = new Vector2(this.x - vector.x, this.y - vector.y, this.type)
@@ -29,28 +29,32 @@ class Vector2 {
   }
   multiply(vector, mutate) {
     let newVect = new Vector2(this.x * vector.x, this.y * vector.y, this.type)
-    if (mutate) {this.assign(newVect.x, newVect.y)} else {return newVect}
+    if (mutate) { this.assign(newVect.x, newVect.y) } else { return newVect }
   }
   multiplyScalar(scalar, mutate) {
     let newVect = new Vector2(this.x * scalar, this.y * scalar, this.type)
-    if (mutate) {this.assign(newVect.x, newVect.y)} else {return newVect}
+    if (mutate) { this.assign(newVect.x, newVect.y) } else { return newVect }
   }
   divide(vector, mutate) {
     let newVect = new Vector2(this.x / vector.x, this.y / vector.y, this.type)
-    if (mutate) {this.assign(newVect.x, newVect.y)} else {return newVect}
+    if (mutate) { this.assign(newVect.x, newVect.y) } else { return newVect }
   }
   divideScalar(scalar, mutate) {
     let newVect = new Vector2(this.x / scalar, this.y / scalar, this.type)
-    if (mutate) {this.assign(newVect.x, newVect.y)} else {return newVect}
+    if (mutate) { this.assign(newVect.x, newVect.y) } else { return newVect }
+  }
+  raise(degree, mutate) {
+    let newVect = new Vector2(this.x ** degree, this.y ** degree, this.type)
+    if (mutate) { this.assign(newVect.x, newVect.y) } else { return newVect }
   }
   invert(mutate) {
     if (mutate) { this.multiplyScalar(-1, true) } else { return this.multiplyScalar(-1) }
   }
   abs(mutate) {
     let newVect = new Vector2(Math.abs(this.x), Math.abs(this.y), this.type)
-    if (mutate) {this.assign(newVect.x, newVect.y)} else {return newVect}
+    if (mutate) { this.assign(newVect.x, newVect.y) } else { return newVect }
   }
-  
+
   length() { return Math.sqrt(this.x ** 2 + this.y ** 2) }
   slope() { return this.y / this.x }
   clone() { return new Vector2(this.x, this.y, this.type) }
@@ -63,5 +67,5 @@ class Vector2 {
   rotate(angle) {
     throw "Does not exist"
   }
-  
+
 }
