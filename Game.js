@@ -95,8 +95,8 @@ window.gameStep = function () {
   p.moveWithCollisions(a);
 }
 window.gameSpeed = function (fps) {
-  if (typeof fps != 'number') {throw " That's not a number" }
+  if (typeof fps != 'number') { throw " That's not a number" }
   clearInterval(gameID);
-  if (fps != 0) { gameID = setInterval(window.gameStep, 1000/fps) }
+  if (fps != 0) { gameID = setInterval(window.gameStep, 1000 / fps) }
 }
 window.gameSpeed(60);
