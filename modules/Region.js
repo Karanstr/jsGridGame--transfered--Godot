@@ -59,7 +59,7 @@ class Region extends Quadtree {
       if (key == 1 || node.data != this.readNode(key >> 2).data) {
         let box = this.getBoxDimensions(key);
         let color = this.blockMap.getBlock(node.data).color;
-        Render.drawBox(box.position, box.length, color); 
+        Render.drawBox(box.position, box.length, color);
       }
     })
     if (this.debug) {
@@ -143,12 +143,12 @@ class Region extends Quadtree {
     //Takes an x, y coordiate-pair
     //Returns four possible keys that pair might fall into
     let originPoint = point.subtract(this.physics.position);
-    let keys = []; let badcount = 0; let offset = .00001;
+    let keys = []; let badcount = 0; let offset = .001;
     for (let i = 0; i < 2; i++) {
       for (let j = 0; j < 2; j++) {
         for (let layer = 0; layer < this.depth; layer++) {
-          let scaledX = Math.floor(originPoint.x / ((this.length.x + offset - i * offset) / 2 ** layer));
-          let scaledY = Math.floor(originPoint.y / ((this.length.y + offset - j * offset) / 2 ** layer));
+          let scaledX = Math.floor(originPoint.x / ((this.length.x + offset - i * offset * 2) / 2 ** layer));
+          let scaledY = Math.floor(originPoint.y / ((this.length.y + offset - j * offset * 2) / 2 ** layer));
           if (originPoint.x == 0 && i == 0) { scaledX = -1 }
           if (originPoint.y == 0 && j == 0) { scaledY = -1 }
           try {
@@ -262,33 +262,11 @@ class Region extends Quadtree {
     else if (slopeToCorner < Math.abs(slope)) {
       hit.point.add(new Vector(1 / slope * wallDistance.y, wallDistance.y, 0), true); hit.wall.x = 0;
     }
-    hit.distance = hit.point.subtract(startPoint);
     if (this.debug) { Render.drawPoint(hit.point, 'red'); Render.drawLine(startPoint, wallDistance, 'orange'); }
     return hit
   }
 
-  findRequiredForce() {
-    
-  }
-
-  findNextHit(point, direction, velocity, original) {
-    let deltaV = velocity.clone();
-    let totalDrag = new Vector(0, 0, 1), boxDrag = 0;
-    let intcpt = new hitData(point, velocity.sign);
-    this.fillHit(intcpt, direction, velocity);
-    let nextIntcpt = this.findNextIntersection(intcpt.point, velocity, intcpt.key);
-    if (intcpt.colType == 1) { boxDrag = 1 }
-    else if (intcpt.colType == 0 || undefined) { boxDrag = .1 }
-    let extraRequired
-
-  }
-
-  // drag(t) = v*-.1
-  // v(t) = 
-
-
-
-  calcHit(point, direction, velocity) {
+  findNextHit(point, direction, velocity) {
     //Steps through each square in a line until a solid square or boundary wall is hit
     let traveled = 0, hit = new hitData(point, velocity.sign());
     let distance = velocity.length(), searching = true; if (velocity.length() == 0) { return hit }
@@ -298,7 +276,6 @@ class Region extends Quadtree {
       if (traveled >= distance || hit.colType == 1) { break }
       hit = this.findNextIntersection(hit.point, velocity, hit.key);
       this.fillHit(hit, direction, velocity);
-      
       switch (hit.colType) {
         case undefined: searching = false; break //Hitting region boundary
         default: //Step to the next block
@@ -318,7 +295,7 @@ class Region extends Quadtree {
     for (let i = 0; i < culledCorners.length; i++) {
       let corner = culledCorners[i];
       let cornerPoint = corner.point.add(start);
-      let hit = target.calcHit(cornerPoint, corner.direction, currentVelocity);
+      let hit = target.findNextHit(cornerPoint, corner.direction, currentVelocity);
       if (hit.colType == 1) {
         hit.distance = hit.point.subtract(cornerPoint);
         let slide, update = false;
@@ -337,8 +314,7 @@ class Region extends Quadtree {
   }
 
   moveWithCollisions(target) {
-    let startVelocity = this.physics.velocity.clone();
-    if (startVelocity.length() == 0) { return }
+    if (this.physics.velocity.length() == 0) { return }
     //Checks collisions in the xy direction, then in either the x or y direction depending on velocity
     let foundWalls = new Vector(false, false, 3);
     while ((!foundWalls.x || !foundWalls.y)) {
@@ -346,13 +322,10 @@ class Region extends Quadtree {
       if (hit == undefined || (hit.wall.x == 0 && hit.wall.y == 0)) { this.physics.updatePosition(); break } //Move normally
       else {
         this.physics.applyPartialVelocity(hit.distance);
-        if (hit.wall.x != 0) { foundWalls.x = true; this.physics.velocity.x = 0; startVelocity.x = 0; }
-        if (hit.wall.y != 0) { foundWalls.y = true; this.physics.velocity.y = 0; startVelocity.y = 0; }
+        if (hit.wall.x != 0) { foundWalls.x = true; this.physics.velocity.x = 0; }
+        if (hit.wall.y != 0) { foundWalls.y = true; this.physics.velocity.y = 0; }
       }
     }
-    this.physics.velocity = startVelocity;
-    this.physics.position.x = Number(this.physics.position.x.toFixed(6));
-    this.physics.position.y = Number(this.physics.position.y.toFixed(6));
   }
   //Collision/Physics End
 }
@@ -371,8 +344,8 @@ class blockMap {
 
   getBlock(id) { return this.blockList.get(id) }
 
-  addBlock(id, color, collisionType) { 
-    this.blockList.set(id, new Block(color, collisionType)) 
+  addBlock(id, color, collisionType) {
+    this.blockList.set(id, new Block(color, collisionType))
   }
 
   import() {
