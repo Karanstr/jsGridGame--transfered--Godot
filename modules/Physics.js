@@ -10,6 +10,7 @@ class PhysicsObject {
     this.velocity = new Vector2(0, 0, 1)
     this.acceleration = new Vector2(0, 0, 1)
     this.decay = drag;
+    this.mass;
   }
 
   applyForce(acceleration) {
