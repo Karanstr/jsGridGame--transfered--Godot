@@ -70,7 +70,7 @@ let keyMove = window.keyMove;
 let keyRemove = new Set();
 onkeydown = (event) => { keyMove.add(event.key) }
 onkeyup = (event) => { keyRemove.add(event.key) }
-window.speed = .25;
+window.speed = new Vector(.25, .5, 1);
 window.gravity = new Vector(0, .3, 1);
 var gameID;
 
@@ -79,10 +79,10 @@ window.gameStep = function () {
   if (debugCheck == 0) { window.assignDebug(false) } else { window.assignDebug(true) }
   Render.drawBox(new Vector(0, 0, 0), new Vector(canData.right, canData.bottom, 1), 'white');
   if (keyMove.length != 0) {
-    if (keyMove.has('w')) { currentMove.physics.applyForce(new Vector(0, 2 * -window.speed)) }
+    if (keyMove.has('w')) { currentMove.physics.applyForce(new Vector(0, -window.speed.y)) }
     if (keyMove.has('a') && keyMove.has('d')) { }
-    else if (keyMove.has('a')) { currentMove.physics.applyForce(new Vector(-window.speed, 0)) }
-    else if (keyMove.has('d')) { currentMove.physics.applyForce(new Vector(window.speed, 0)) }
+    else if (keyMove.has('a')) { currentMove.physics.applyForce(new Vector(-window.speed.x, 0)) }
+    else if (keyMove.has('d')) { currentMove.physics.applyForce(new Vector(window.speed.x, 0)) }
   }
   currentMove.physics.applyForce(window.gravity);
   keyRemove.forEach((key) => { keyMove.delete(key) })

@@ -143,12 +143,13 @@ class Region extends Quadtree {
     //Takes an x, y coordiate-pair
     //Returns four possible keys that pair might fall into
     let originPoint = point.subtract(this.physics.position);
-    let keys = []; let badcount = 0; let offset = .001;
+    let keys = [], badcount = 0;
+    let offset = new Vector(.01, .01, 1);
     for (let i = 0; i < 2; i++) {
       for (let j = 0; j < 2; j++) {
         for (let layer = 0; layer < this.depth; layer++) {
-          let scaledX = Math.floor(originPoint.x / ((this.length.x + offset - i * offset * 2) / 2 ** layer));
-          let scaledY = Math.floor(originPoint.y / ((this.length.y + offset - j * offset * 2) / 2 ** layer));
+          let scaledX = Math.floor(originPoint.x / ((this.length.x + offset.x - i * offset.x * 2) / 2 ** layer));
+          let scaledY = Math.floor(originPoint.y / ((this.length.y + offset.y - j * offset.y * 2) / 2 ** layer));
           if (originPoint.x == 0 && i == 0) { scaledX = -1 }
           if (originPoint.y == 0 && j == 0) { scaledY = -1 }
           try {
