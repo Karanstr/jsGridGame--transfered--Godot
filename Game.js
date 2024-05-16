@@ -9,7 +9,7 @@ window.Vector = Vector;
 window.a = new Region(80, 80, 320, 320, new blockMap());
 window.a.blockMap.addBlock(0, '#ADD8E6', 0);
 window.a.blockMap.addBlock(1, '#777777', 1);
-window.a.Load('8401 8411 9081 8441 8451 8481 84a1 93d1 93e1 93f1 8501 8511 8541 95d1 95e1 95f1 85d1 9791 85f1 8601 8621 9911 9921 9931 9941 8661 8671 86e1 86f1 9c51 8721 8731 9d11 8751 9d81 9da1 8771 87a1 87b1 9f21 9f31 9f61 87e1 87f1');
+window.a.Load('8010 8041 8420 8130 84f1 8141 8571 8071 81c0 8740 81f0 9081 8430 8460 8470 8490 84b0 93c0 8520 8530 8541 95c0 85d1 9791 85f1 8061 9c51 8721 8731 9d11 9d90 9db0 8790 9f21 9f31 9f61 87e1 87f1');
 window.a.findCorners();
 
 window.p = new Region(145, 185, 20, 20, new blockMap());
@@ -94,6 +94,7 @@ window.gameStep = function () {
   p.physics.updateVelocity();
   p.moveWithCollisions(a);
 }
+
 window.gameSpeed = function (fps) {
   if (typeof fps != 'number') { throw " That's not a number" }
   clearInterval(gameID);

@@ -28,15 +28,6 @@ class PhysicsObject {
     this.acceleration.assign(0, 0);
   }
 
-  applyPartialVelocity(velocity) {
-    //Assumes this is being used to step through collisions and as such
-    //Expects velocity to end up at 0 (Probably a bad way to do it)
-    //Velocity must be set back to original at some point or else
-    //Sad things happen
-    this.position.add(velocity, true);
-    this.velocity.subtract(velocity, true);
-  }
-
   applyMovement(velocity) {
     this.position.add(velocity, true);
   }

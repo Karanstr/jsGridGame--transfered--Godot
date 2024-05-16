@@ -145,13 +145,18 @@ class Region extends Quadtree {
     let originPoint = point.subtract(this.physics.position);
     let keys = [], badcount = 0;
     let offset = new Vector(.01, .01, 1);
-    for (let i = 0; i < 2; i++) {
-      for (let j = 0; j < 2; j++) {
+    for (let xShift = 0; xShift < 2; xShift++) {
+      for (let yShift = 0; yShift < 2; yShift++) {
         for (let layer = 0; layer < this.depth; layer++) {
-          let scaledX = Math.floor(originPoint.x / ((this.length.x + offset.x - i * offset.x * 2) / 2 ** layer));
-          let scaledY = Math.floor(originPoint.y / ((this.length.y + offset.y - j * offset.y * 2) / 2 ** layer));
-          if (originPoint.x == 0 && i == 0) { scaledX = -1 }
-          if (originPoint.y == 0 && j == 0) { scaledY = -1 }
+          let scaledX, scaledY;
+          if (originPoint.x == 0 && xShift == 0) { scaledX = -1 }
+          else { 
+            scaledX = Math.floor(originPoint.x / ((this.length.x + offset.x - xShift * offset.x * 2) / 2 ** layer)) 
+          }
+          if (originPoint.y == 0 && yShift == 0) { scaledY = -1 }
+          else { 
+            scaledY = Math.floor(originPoint.y / ((this.length.y + offset.y - yShift * offset.y * 2) / 2 ** layer)) 
+          }
           try {
             let key = this.encodeKey(scaledX, scaledY, layer);
             let node = this.readNode(key);
@@ -316,15 +321,23 @@ class Region extends Quadtree {
 
   moveWithCollisions(target) {
     if (this.physics.velocity.length() == 0) { return }
+    let remainingVelocity = this.physics.velocity.clone();
     //Checks collisions in the xy direction, then in either the x or y direction depending on velocity
     let foundWalls = new Vector(false, false, 3);
     while ((!foundWalls.x || !foundWalls.y)) {
-      let hit = this.checkCollision(this.physics.position, this.physics.velocity, target);
+      let hit = this.checkCollision(this.physics.position, remainingVelocity, target);
       if (hit == undefined || (hit.wall.x == 0 && hit.wall.y == 0)) { this.physics.updatePosition(); break } //Move normally
       else {
-        this.physics.applyPartialVelocity(hit.distance);
-        if (hit.wall.x != 0) { foundWalls.x = true; this.physics.velocity.x = 0; }
-        if (hit.wall.y != 0) { foundWalls.y = true; this.physics.velocity.y = 0; }
+        this.physics.applyMovement(hit.distance);
+        remainingVelocity.subtract(hit.distance);
+        if (hit.wall.x != 0) { 
+          foundWalls.x = true; this.physics.velocity.x = 0; 
+          remainingVelocity.x = 0;
+        }
+        if (hit.wall.y != 0) { 
+          foundWalls.y = true; this.physics.velocity.y = 0; 
+          remainingVelocity.y = 0;
+        }
       }
     }
   }
