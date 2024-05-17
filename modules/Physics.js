@@ -31,9 +31,18 @@ class PhysicsObject {
   applyMovement(velocity) {
     this.position.add(velocity, true);
   }
-
-  updatePosition() {
-    this.position.add(this.velocity, true);
+  // Math here: https://www.desmos.com/calculator/gq6lxj78mm
+  // Derived from equations found https://physicscourses.colorado.edu/phys2210/phys2210_fa20/lecture/lec08-linear-drag/ 
+  calcMovementWithDrag(velocity, dragFactor, time) {
+    return velocity.divideScalar(dragFactor).multiplyScalar(1-1/(Math.E**(dragFactor*time)))  
   }
 
+  calcTimeToGetTo1DDistance(velocity1D, dragFactor, distance1D) {
+    return Math.log(1/(1-distance1D*dragFactor/velocity1D))/dragFactor;
+  }
+  
+  getDraggedVelocity(dragFactor, velocity, time) {
+    return velocity.divideScalar(Math.E**(time*dragFactor))
+  }
+  
 }

@@ -1,12 +1,3 @@
-Don't apply some boring dampening factor, give each block a friction/resistance value and 
-as you step through the boxes take note of the friction value and the distance travelled,
-then apply the total dampenned to velocity
-Remember this means I'll have to do a bunch of work because 
-you can be in multiple blocks at once
+https://physicscourses.colorado.edu/phys2210/phys2210_fa20/lecture/lec08-linear-drag/
 
-resistanceFactor = new Vector2(x, y, 2) 
-blockLength.multiply(resistanceFactor) = EFectiveDistance
-delta.divide(EFD) = travelRatio
-if travelRatio.x <= 1, all x is used up, do not keep searching. Move velocity.x * travelRatio.x
-if travelRatio.x > 1, velocity remains, continue search. Move delta.x, update velocity.x - EFD.x
-//Do the same with y's
+https://www.desmos.com/calculator/gq6lxj78mm
