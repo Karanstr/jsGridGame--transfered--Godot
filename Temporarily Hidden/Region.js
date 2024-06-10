@@ -1,8 +1,8 @@
 
 import Quadtree from "./Quadtree.js";
-import Vector from "./Vector2.js"
+import Vector from "../modules/Vector2.js"
 import PhysObject from "./Physics.js";
-import * as Render from "./Render.js";
+import * as Render from "../modules/Render.js";
 export { Region, blockMap }
 
 //Data Classes
@@ -150,12 +150,12 @@ class Region extends Quadtree {
         for (let layer = 0; layer < this.depth; layer++) {
           let scaledX, scaledY;
           if (originPoint.x == 0 && xShift == 0) { scaledX = -1 }
-          else { 
-            scaledX = Math.floor(originPoint.x / ((this.length.x + offset.x - xShift * offset.x * 2) / 2 ** layer)) 
+          else {
+            scaledX = Math.floor(originPoint.x / ((this.length.x + offset.x - xShift * offset.x * 2) / 2 ** layer))
           }
           if (originPoint.y == 0 && yShift == 0) { scaledY = -1 }
-          else { 
-            scaledY = Math.floor(originPoint.y / ((this.length.y + offset.y - yShift * offset.y * 2) / 2 ** layer)) 
+          else {
+            scaledY = Math.floor(originPoint.y / ((this.length.y + offset.y - yShift * offset.y * 2) / 2 ** layer))
           }
           try {
             let key = this.encodeKey(scaledX, scaledY, layer);
@@ -294,10 +294,10 @@ class Region extends Quadtree {
 
   //Collision Again
   checkCollision(start, velocity, target) {
-    let finalHit;
-    let currentVelocity = velocity.clone();
+    let finalHit, currentVelocity = velocity.clone();
     let cullSet = this.pointCull(velocity), culledCorners = [];
     this.cornerList.forEach((corner) => { if (cullSet.has(corner.direction)) { culledCorners.push(corner) } })
+    //For each corner we care about 
     for (let i = 0; i < culledCorners.length; i++) {
       let corner = culledCorners[i];
       let cornerPoint = corner.point.add(start);
@@ -330,12 +330,12 @@ class Region extends Quadtree {
       else {
         this.physics.applyMovement(hit.distance);
         remainingVelocity.subtract(hit.distance);
-        if (hit.wall.x != 0) { 
-          foundWalls.x = true; this.physics.velocity.x = 0; 
+        if (hit.wall.x != 0) {
+          foundWalls.x = true; this.physics.velocity.x = 0;
           remainingVelocity.x = 0;
         }
-        if (hit.wall.y != 0) { 
-          foundWalls.y = true; this.physics.velocity.y = 0; 
+        if (hit.wall.y != 0) {
+          foundWalls.y = true; this.physics.velocity.y = 0;
           remainingVelocity.y = 0;
         }
       }
@@ -348,7 +348,6 @@ class Block {
   constructor(color, collisionType) {
     this.color = color;
     this.collisionType = collisionType;
-    this.resistanceFactor;
   }
 }
 class blockMap {

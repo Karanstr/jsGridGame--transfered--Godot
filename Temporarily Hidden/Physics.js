@@ -1,5 +1,5 @@
 
-import Vector2 from "./Vector2.js";
+import Vector2 from "../modules/Vector2.js";
 export { PhysicsObject as default }
 
 
@@ -37,3 +37,15 @@ class PhysicsObject {
   }
 
 }
+
+
+/*identifyCollisions(object1, object2) {
+  //timeToCollision = object2.pos.subtract(object1.pos).divide(object1.v.subract(object2.v))
+  //^ This is wrong
+  //Relative velocity = v(perspectiveMoving) - v(perspectiveStationary) 
+  //Run next intersection from with point from moving object using tree from stationary
+  //Use relative velocity
+  //Once we have these points, determine time it takes to get to each one
+  //then collide with whichever point we reach first
+
+}*/

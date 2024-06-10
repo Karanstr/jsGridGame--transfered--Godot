@@ -6,6 +6,18 @@ let canData = canvas.getBoundingClientRect();
 window.Render = Render;
 window.Vector = Vector;
 
+window.a = new Region(80, 80, 320, 320, new blockMap());
+window.a.blockMap.addBlock(0, '#ADD8E6', 0);
+window.a.blockMap.addBlock(1, '#777777', 1);
+window.a.Load('8010 8041 8420 8130 84f1 8141 8571 8071 81c0 8740 81f0 9081 8430 8460 8470 8490 84b0 93c0 8520 8530 8541 95c0 85d1 9791 85f1 8061 9c51 8721 8731 9d11 9d90 9db0 8790 9f21 9f31 9f61 87e1 87f1');
+window.a.findCorners();
+
+window.p = new Region(145, 185, 20, 20, new blockMap());
+window.p.blockMap.addBlock(0, '#ffffff', 0);
+window.p.blockMap.addBlock(1, '#dd7777', 1);
+window.p.Load('8011');
+window.p.findCorners();
+
 //Order rendering should be done in
 let list = [window.a, window.p];
 window.currentMove = window.p;

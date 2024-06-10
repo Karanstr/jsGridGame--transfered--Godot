@@ -1,7 +1,7 @@
 
 export { Quadtree as default }
 
-//Used for easily reading data retrieved by readNode()
+//Used to easily display data retrieved by readNode()
 class Node {
   constructor(type, data) {
     this.type = type;
