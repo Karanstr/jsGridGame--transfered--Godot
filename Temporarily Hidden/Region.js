@@ -278,15 +278,13 @@ class Region extends Quadtree {
     let distance = velocity.length(), searching = true; if (velocity.length() == 0) { return hit }
     this.fillHit(hit, direction, velocity);
     //While not hitting a solid block, region boundary, and haven't check full path
-    while (searching) {
-      if (traveled >= distance || hit.colType == 1) { break }
+    while (traveled < distance && hit.colType != 1) {
       hit = this.findNextIntersection(hit.point, velocity, hit.key);
       this.fillHit(hit, direction, velocity);
-      switch (hit.colType) {
-        case undefined: searching = false; break //Hitting region boundary
-        default: //Step to the next block
-          traveled += hit.point.subtract(point).length();
-          point = hit.point.clone();
+      if (hit.colType == undefined) { break } //Hitting region boundary
+      else { //Step to the next block
+        traveled += hit.point.subtract(point).length();
+        point = hit.point.clone();
       }
     }
     return hit
@@ -326,7 +324,9 @@ class Region extends Quadtree {
     let foundWalls = new Vector(false, false, 3);
     while ((!foundWalls.x || !foundWalls.y)) {
       let hit = this.checkCollision(this.physics.position, remainingVelocity, target);
-      if (hit == undefined || (hit.wall.x == 0 && hit.wall.y == 0)) { this.physics.updatePosition(); break } //Move normally
+      if (hit == undefined || (hit.wall.x == 0 && hit.wall.y == 0)) { 
+        this.physics.applyMovement(this.physics.velocity); break 
+      } //Move normally
       else {
         this.physics.applyMovement(hit.distance);
         remainingVelocity.subtract(hit.distance);

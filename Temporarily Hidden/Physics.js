@@ -31,21 +31,18 @@ class PhysicsObject {
   applyMovement(velocity) {
     this.position.add(velocity, true);
   }
+  // Math here: https://www.desmos.com/calculator/gq6lxj78mm
+  // Derived from equations found https://physicscourses.colorado.edu/phys2210/phys2210_fa20/lecture/lec08-linear-drag/ 
+  calcMovementWithDrag(velocity, dragFactor, time) {
+    return velocity.divideScalar(dragFactor).multiplyScalar(1 - 1 / (Math.E ** (dragFactor * time)))
+  }
 
-  updatePosition() {
-    this.position.add(this.velocity, true);
+  calcTimeToGetTo1DDistance(velocity1D, dragFactor, distance1D) {
+    return Math.log(1 / (1 - distance1D * dragFactor / velocity1D)) / dragFactor;
+  }
+
+  getDraggedVelocity(dragFactor, velocity, time) {
+    return velocity.divideScalar(Math.E ** (time * dragFactor))
   }
 
 }
-
-
-/*identifyCollisions(object1, object2) {
-  //timeToCollision = object2.pos.subtract(object1.pos).divide(object1.v.subract(object2.v))
-  //^ This is wrong
-  //Relative velocity = v(perspectiveMoving) - v(perspectiveStationary) 
-  //Run next intersection from with point from moving object using tree from stationary
-  //Use relative velocity
-  //Once we have these points, determine time it takes to get to each one
-  //then collide with whichever point we reach first
-
-}*/
