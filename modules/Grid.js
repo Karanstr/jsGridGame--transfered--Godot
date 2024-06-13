@@ -1,18 +1,21 @@
 "use strict";
-import Vector2 from "../Utility/Vector2.js";
+import Vector2 from "./Vector2.js";
 //Most space efficient when rows == columns and rows/columns are a power of 2
 //Todo:
 // Exposed corner detection, bitmasks?
 
 class Grid {
-  constructor(rows, columns, defaultValue) {
+  constructor(rows, columns) {
     this.dimensions = new Vector2(rows, columns);
     this.keyOffset = (Math.min(rows, columns) - 1).toString(2).length;
     this.maxBits = (Math.max(rows, columns) - 1).toString(2).length
     this.data = [];
     //Fills each block with defaultValue
-    let keys = this.genKeys(0, 0, this.dimensions.x, this.dimensions.y)
-    keys.forEach((key) => { this.modify(key, defaultValue) })
+    let keys = this.genKeys(0, 0, this.dimensions.x, this.dimensions.y);
+    let i = 0;
+    keys.forEach((key) => {
+      this.modify(key, i % 2); i++
+    })
   }
 
   hash(x, y) {
