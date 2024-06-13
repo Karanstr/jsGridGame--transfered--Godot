@@ -16,11 +16,7 @@ class WorldObject {
     let keys = this.grid.genKeys(0, 0, this.grid.dimensions.x, this.grid.dimensions.y);
     keys.forEach((key) => {
       let point = this.grid.dehash(key);
-      let color;
-      switch (this.grid.read(key)) {
-        case 0: color = 'red'; break
-        case 1: color = 'blue'; break
-      }
+      let color = Blocks.get(this.grid.read(key));
       let boxSize = this.length.divide(this.grid.dimensions)
       Render.drawBox(this.position.add(point.multiply(boxSize)), boxSize, color);
     })
@@ -35,3 +31,7 @@ class WorldObject {
 }
 
 export default WorldObject
+
+const Blocks = new Map();
+Blocks.set(0, 'red')
+Blocks.set(1, 'blue')
