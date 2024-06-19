@@ -60,6 +60,7 @@ class Grid {
   }
 
   //This'll get kinda big eventually, one day compression'll exist
+  //Also doesn't clarify whether x or y is leading, this will be problematic down the line
   //Not today though
   save() {
     let saveData = "";
