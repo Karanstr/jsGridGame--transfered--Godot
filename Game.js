@@ -1,27 +1,37 @@
 //import { Region, blockMap } from './modules/Region.js';
 import Render from './modules/Render.js';
+import Vector2 from './modules/Vector2.js';
 import Vector from "./modules/Vector2.js";
 import WorldObject from './modules/WorldObject.js';
 const canvas = document.getElementById("canvas");
 let canData = canvas.getBoundingClientRect();
 window.canData = canData
 window.Render = Render;
-window.Vector = Vector;
+window.Vector2 = Vector2;
 window.WorldObject = WorldObject;
 
-const a = new WorldObject(0, 0, 500, 500)
+const a = new WorldObject(125, 125, 250, 250)
 window.a = a;
 //Order rendering should be done in
-let list = [window.a, window.p];
-window.currentMove = window.p;
+window.currentMove;
 window.currentEdit = window.a;
-currentEdit = window.currentEdit;
-currentMove = window.currentMove;
+let currentEdit = window.currentEdit;
+let currentMove = window.currentMove;
 let curMode = 0;
 
 document.getElementById('tools').addEventListener("change", (event) => {
   curMode = Number(event.target.selectedOptions[0].getAttribute("value"))
 })
+
+onmousedown = (mouse) => {
+  if (mouse.pageY > canData.top &&
+    mouse.pageY < canData.bottom &&
+    mouse.pageX > canData.left &&
+    mouse.pageX < canData.right) {
+
+    console.log(a.pointToKey(new Vector2(mouse.offsetX, mouse.offsetY)));
+  }
+}
 
 window.keyMove = new Set();
 let keyMove = window.keyMove;
@@ -39,6 +49,9 @@ window.gameStep = function () {
   }
   keyRemove.forEach((key) => { keyMove.delete(key) })
   keyRemove.clear();
+
+  //Clear canvas then redraw
+  Render.drawBox(new Vector2(0, 0), new Vector2(500, 500), 'white')
   a.Render();
 
 }
