@@ -4,8 +4,8 @@ import Render from "./Render.js"
 
 class WorldObject {
   //Figure out the distinction between world position and screen position?
-  constructor(x, y, width, height) {
-    this.grid = new Grid(8, 8, 0);
+  constructor(x, y, width, height, rows, columns) {
+    this.grid = new Grid(rows, columns, 0);
     this.length = new Vector2(width, height);
     this.blockLength = this.length.divide(this.grid.dimensions);
     this.position = new Vector2(x, y);
@@ -15,17 +15,12 @@ class WorldObject {
 
   //Figure out why html canvas sucks at drawing adjacent squares
   Render() {
-    //Really stupid, running genKeys just to convert them back to (x, y)
-    //Either make genKeys smarter or replace with a 2d loop
-
     let keys = this.grid.genKeys(0, 0, this.grid.dimensions.x, this.grid.dimensions.y);
     keys.forEach((key) => {
-      let point = this.grid.dehash(key);
-      let color = Blocks.get(this.grid.read(key));
-      let boxSize = this.length.divide(this.grid.dimensions);
-      Render.drawBox(this.position.add(point.multiply(boxSize)), boxSize, color);
+      let point = this.grid.dehash(key), color = Blocks.get(this.grid.read(key));
+      Render.drawBox(this.position.add(point.multiply(this.blockLength)), this.blockLength, color);
       if (this.debug) {
-        Render.outlineBox(this.position.add(point.multiply(boxSize)), boxSize)
+        Render.outlineBox(this.position.add(point.multiply(this.blockLength)), this.blockLength)
       }
     })
   }
