@@ -4,11 +4,11 @@ import Render from "./Render.js"
 
 class WorldObject {
   //Figure out the distinction between world position and screen position?
-  constructor(x, y, width, height, rows, columns) {
-    this.grid = new Grid(rows, columns, 0);
-    this.length = new Vector2(width, height);
+  constructor(position, length, tableSize, defaultValue) {
+    this.grid = new Grid(tableSize, defaultValue);
+    this.length = length.clone();
     this.blockLength = this.length.divide(this.grid.dimensions);
-    this.position = new Vector2(x, y);
+    this.position = position.clone();
     this.velocity = new Vector2(0, 0);
     this.debug = true;
   }

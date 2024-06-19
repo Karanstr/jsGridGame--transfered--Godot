@@ -8,12 +8,21 @@ window.canData = canData
 window.Render = Render;
 window.Vector2 = Vector2;
 window.WorldObject = WorldObject;
-const a = new WorldObject(125, 125, 250, 250, 8, 8)
+const a = new WorldObject(
+  new Vector2(125, 125),
+  new Vector2(250, 250),
+  new Vector2(8, 8),
+  1);
 window.a = a;
-const p = new WorldObject(5, 5, 20, 20, 1, 1);
+const p = new WorldObject(
+  new Vector2(5, 5),
+  new Vector2(20, 20),
+  new Vector2(1, 1),
+  0);
 window.p = p;
 
-var renderList = [p, a]
+//Order objects should be rendered
+var renderList = [a, p]
 window.currentMove = p;
 window.currentEdit = a;
 let currentEdit = window.currentEdit;
