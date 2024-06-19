@@ -46,7 +46,7 @@ class Vector2 {
     if (mutate) { this.assign(newVect.x, newVect.y) } else { return newVect }
   }
   normalize(mutate) {
-    if (mutate) { this.divideScalar(Math.sqrt(this.x ** 2 + this.y ** 2)) }
+    if (mutate) { this.divideScalar(Math.sqrt(this.x ** 2 + this.y ** 2), true) }
     else { return this.clone().divideScalar(Math.sqrt(this.x ** 2 + this.y ** 2)) }
   }
 
