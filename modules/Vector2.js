@@ -45,9 +45,9 @@ class Vector2 {
     let newVect = new Vector2(Math.abs(this.x), Math.abs(this.y))
     if (mutate) { this.assign(newVect.x, newVect.y) } else { return newVect }
   }
-  normalize(mutate) {
+  normalize(mutate) { //Should totally be called directionize. Would make so much more sense
     if (mutate) { this.divideScalar(Math.sqrt(this.x ** 2 + this.y ** 2), true) }
-    else { return this.clone().divideScalar(Math.sqrt(this.x ** 2 + this.y ** 2)) }
+    else { return this.divideScalar(Math.sqrt(this.x ** 2 + this.y ** 2)) }
   }
 
   length() { return Math.sqrt(this.x ** 2 + this.y ** 2) }

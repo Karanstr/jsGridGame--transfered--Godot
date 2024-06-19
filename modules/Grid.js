@@ -8,8 +8,8 @@ import Vector2 from "./Vector2.js";
 class Grid {
   constructor(dimensions, defaultValue) {
     this.dimensions = dimensions.clone()
-    this.keyOffset = (Math.min(this.dimensions.x, this.dimensions.y) - 1).toString(2).length;
-    this.maxBits = (Math.max(this.dimensions.x, this.dimensions.y) - 1).toString(2).length
+    this.keyOffset = (this.dimensions.min() - 1).toString(2).length;
+    this.maxBits = (this.dimensions.max() - 1).toString(2).length;
     this.data = [];
     //Fills each block with defaultValue
     let keys = this.genKeys(0, 0, this.dimensions.x, this.dimensions.y);
