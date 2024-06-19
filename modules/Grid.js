@@ -1,4 +1,5 @@
 "use strict";
+
 import Vector2 from "./Vector2.js";
 //Most space efficient when rows == columns and rows/columns are a power of 2
 //Todo:

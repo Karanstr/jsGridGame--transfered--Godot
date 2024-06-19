@@ -1,4 +1,5 @@
-//import { Region, blockMap } from './modules/Region.js';
+"use strict";
+
 import Render from './modules/Render.js';
 import Vector2 from './modules/Vector2.js';
 import WorldObject from './modules/WorldObject.js';

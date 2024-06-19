@@ -1,3 +1,5 @@
+"use strict";
+
 import Grid from "./Grid.js"
 import Vector2 from "./Vector2.js"
 import Render from "./Render.js"
