@@ -1,7 +1,8 @@
 "use strict";
 
 import Vector2 from "./Vector2.js";
-//Most space efficient when rows == columns and rows/columns are a power of 2
+//Most space efficient when rows == columns and rows/columns are a power of 2.
+//If we go above 31 in either, bad things start happening
 //Todo:
 // Exposed corner detection, bitmasks?
 
@@ -11,9 +12,23 @@ class Grid {
     this.keyOffset = (this.dimensions.min() - 1).toString(2).length;
     this.maxBits = (this.dimensions.max() - 1).toString(2).length;
     this.data = [];
+    this.binaryGrids = [];
     //Fills each block with defaultValue
     let keys = this.genKeys(0, 0, this.dimensions.x, this.dimensions.y);
     keys.forEach((key) => { this.modify(key, defaultValue) })
+  }
+
+  //Recieves a Set()
+  convertToBinary(setData) {
+    let binaryGrid = [];
+    for (let y = 0; y < this.dimensions.y; y++) {
+      binaryGrid[y] = 0
+      for (let x = 0; x < this.dimensions.x; x++) {
+        binaryGrid[y] <<= 1;
+        if (setData.has(this.read(this.hash(x, y)))) { binaryGrid[y] += 1 }
+      }
+    }
+    return binaryGrid
   }
 
   hash(x, y) {
@@ -39,7 +54,14 @@ class Grid {
     return new Vector2(x, y)
   }
 
-  modify(key, value) { this.data[key] = value }
+  modify(key, value) {
+    let oldValue = this.data[key];
+    this.data[key] = value;
+    this.binaryGrids[value] = this.convertToBinary(new Set([value]));
+    if (oldValue != undefined) {
+      this.binaryGrids[oldValue] = this.convertToBinary(new Set([oldValue]));
+    }
+  }
 
   read(key) { return this.data[key] }
 

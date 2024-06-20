@@ -17,14 +17,19 @@ class WorldObject {
 
   //Figure out why html canvas sucks at drawing adjacent squares
   Render() {
-    let keys = this.grid.genKeys(0, 0, this.grid.dimensions.x, this.grid.dimensions.y);
-    keys.forEach((key) => {
-      let point = this.grid.dehash(key), color = Blocks.get(this.grid.read(key));
-      Render.drawBox(this.position.add(point.multiply(this.blockLength)), this.blockLength, color);
-      if (this.debug) {
-        Render.outlineBox(this.position.add(point.multiply(this.blockLength)), this.blockLength)
-      }
-    })
+    for (let i = 0; i < this.grid.binaryGrids.length; i++) {
+      let boxes = Render.greedyMesh(this.grid.binaryGrids[i]);
+      if (boxes.length == 0) { continue }
+      boxes.forEach((box) => {
+        let point = box[0], length = box[1].add(new Vector2(1, 1)).subtract(point);
+        Render.drawBox(this.position.add(point.multiply(this.blockLength)),
+          length.multiply(this.blockLength), Blocks.get(i));
+        if (this.debug) {
+          Render.outlineBox(this.position.add(point.multiply(this.blockLength)),
+            length.multiply(this.blockLength))
+        }
+      })
+    }
   }
 
   //Eventually redo this so it only generates keys velocity matches

@@ -68,7 +68,6 @@ window.gameStep = function () {
   //Clear canvas then redraw
   Render.drawBox(new Vector2(0, 0), new Vector2(500, 500), 'white')
   renderList.forEach((object) => { object.Render() })
-
 }
 window.gameSpeed = function (fps) {
   clearInterval(gameID);
