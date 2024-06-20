@@ -10,13 +10,13 @@ window.Render = Render;
 window.Vector2 = Vector2;
 window.WorldObject = WorldObject;
 const a = new WorldObject(
-  new Vector2(125, 125),
+  new Vector2(0, 0),
   new Vector2(250, 250),
   new Vector2(8, 8),
   1);
 window.a = a;
 const p = new WorldObject(
-  new Vector2(5, 5),
+  new Vector2(0, 0),
   new Vector2(20, 20),
   new Vector2(1, 1),
   0);
@@ -26,17 +26,15 @@ window.p = p;
 var renderList = [a, p]
 window.currentMove = p;
 window.currentEdit = a;
-let currentEdit = window.currentEdit;
-let currentMove = window.currentMove;
 
 onmousedown = (mouse) => {
   if (mouse.pageY > canData.top &&
     mouse.pageY < canData.bottom &&
     mouse.pageX > canData.left &&
     mouse.pageX < canData.right) {
-    let key = Math.max(...currentEdit.pointToKey(new Vector2(mouse.offsetX, mouse.offsetY)));
+    let key = Math.max(...window.currentEdit.pointToKey(new Vector2(mouse.offsetX, mouse.offsetY)));
     let color = Number(document.getElementById('colorField').value);
-    currentEdit.grid.modify(key, color);
+    window.currentEdit.grid.modify(key, color);
   }
 }
 
@@ -59,7 +57,7 @@ window.gameStep = function () {
     else if (keyMove.has('d')) { frameMove.x = 1 }
     if (frameMove.length() != 0) {
       frameMove.normalize(true);
-      currentMove.position.add(frameMove.multiplyScalar(window.speed), true);
+      window.currentMove.position.add(frameMove.multiplyScalar(window.speed), true);
     }
   }
   keyRemove.forEach((key) => { keyMove.delete(key) })
