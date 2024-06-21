@@ -18,7 +18,7 @@ class WorldObject {
   //Figure out why html canvas sucks at drawing adjacent squares
   Render() {
     for (let i = 0; i < this.grid.binaryGrids.length; i++) {
-      let boxes = Render.greedyMesh(this.grid.binaryGrids[i], this.grid.dimensions.x);
+      let boxes = Render.greedyMesh(this.grid.binaryGrids[i]);
       if (boxes.length == 0) { continue }
       boxes.forEach((box) => {
         let point = box[0], length = box[1].add(new Vector2(1, 1)).subtract(point);

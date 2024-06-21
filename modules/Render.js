@@ -35,7 +35,7 @@ const RenderFunctions = {
     can.stroke();
   },
 
-  greedyMesh(binaryGrid, gridXLength) {
+  greedyMesh(binaryGrid) {
     if (binaryGrid == undefined) { return [] }
     let gridData = Array.from(binaryGrid), shapeList = [];
     //Until all shapes have been accounted for
@@ -69,8 +69,8 @@ const RenderFunctions = {
         //And if we've reached the final height and are about to terminate, stop looking
         if (y + 1 == gridData.length) { endHeight = y; break }
       }
-      let startPos = new Vector2(gridXLength - (steps + maskLength), startHeight)
-      let endPos = new Vector2(gridXLength - 1 - steps, endHeight)
+      let startPos = new Vector2(steps, startHeight)
+      let endPos = new Vector2(maskLength + steps - 1, endHeight)
       shapeList.push([startPos, endPos])
     }
     return shapeList

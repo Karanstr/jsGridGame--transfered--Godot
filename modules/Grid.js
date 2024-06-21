@@ -23,7 +23,7 @@ class Grid {
     let binaryGrid = [];
     for (let y = 0; y < this.dimensions.y; y++) {
       binaryGrid[y] = 0
-      for (let x = 0; x < this.dimensions.x; x++) {
+      for (let x = this.dimensions.x - 1; x >= 0; x--) {
         binaryGrid[y] <<= 1;
         if (setData.has(this.read(this.hash(x, y)))) { binaryGrid[y] += 1 }
       }
