@@ -9,8 +9,8 @@ import Vector2 from "./Vector2.js";
 class Grid {
   constructor(dimensions, defaultValue) {
     this.dimensions = dimensions.clone()
-    this.keyOffset = (this.dimensions.min() - 1).toString(2).length;
-    this.maxBits = (this.dimensions.max() - 1).toString(2).length;
+    this.keyOffset = (this.dimensions.applyAll(Math.min) - 1).toString(2).length;
+    this.maxBits = (this.dimensions.applyAll(Math.max) - 1).toString(2).length;
     this.data = [];
     this.binaryGrids = [];
     //Fills each block with defaultValue
