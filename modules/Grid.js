@@ -2,6 +2,7 @@
 
 import Vector2 from "./Vector2.js";
 //Most space efficient when rows == columns and rows/columns are a power of 2.
+//After that most efficient when columns > rows 
 //If we go above 31 in either, bad things start happening
 //Todo:
 // Exposed corner detection, bitmasks?
@@ -9,8 +10,7 @@ import Vector2 from "./Vector2.js";
 class Grid {
   constructor(dimensions, defaultValue) {
     this.dimensions = dimensions.clone()
-    this.keyOffset = (this.dimensions.applyAll(Math.min) - 1).toString(2).length;
-    this.maxBits = (this.dimensions.applyAll(Math.max) - 1).toString(2).length;
+    this.xOffset = (this.dimensions.y - 1).toString(2).length;
     this.data = [];
     this.binaryGrids = [];
     //Fills each block with defaultValue
@@ -32,13 +32,10 @@ class Grid {
   }
 
   hash(x, y) {
-    if (Math.max(x, y) > (2 ** this.maxBits) - 1 || Math.min(x, y) < 0) {
+    if (x >= this.dimensions.x || y >= this.dimensions.y || Math.min(x, y) < 0) {
       throw RangeError("Value isn't within table boundary");
     }
-    let key;
-    if (this.dimensions.x < this.dimensions.y) { key = (y << this.keyOffset) + x }
-    else { key = (x << this.keyOffset) + y }
-    return key
+    return (x << this.xOffset) + y
   }
 
   //Shut up, I know hashes are supposed to be one way
@@ -46,12 +43,7 @@ class Grid {
     if (key < 0 || key > (2 ** (this.maxBits * 2)) - 1) {
       throw RangeError("Value isn't within table boundary");
     }
-    let x, y;
-    if (this.dimensions.x < this.dimensions.y) {
-      x = key % 2 ** this.keyOffset; y = key >> this.keyOffset;
-    }
-    else { y = key % 2 ** this.keyOffset; x = key >> this.keyOffset; }
-    return new Vector2(x, y)
+    return new Vector2(key >> this.xOffset, key % 2 ** this.xOffset)
   }
 
   modify(key, value) {
@@ -79,9 +71,7 @@ class Grid {
     //Not my problem, this is another me's job
   }
 
-  //This'll get kinda big eventually, one day compression'll exist
-  //Also doesn't clarify whether x or y is leading, this will be problematic down the line
-  //Not today though
+  //This'll get kinda big eventually, one day compression'll exist tho
   save() {
     let saveData = "";
     let keys = this.genKeys(0, 0, this.dimensions.x, this.dimensions.y);
