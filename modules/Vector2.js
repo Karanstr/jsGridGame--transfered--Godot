@@ -38,9 +38,6 @@ class Vector2 {
     let newVect = new Vector2(this.x ** degree, this.y ** degree)
     if (mutate) { this.assign(newVect.x, newVect.y) } else { return newVect }
   }
-  invert(mutate) {
-    if (mutate) { this.multiplyScalar(-1, true) } else { return this.multiplyScalar(-1) }
-  }
   abs(mutate) {
     let newVect = new Vector2(Math.abs(this.x), Math.abs(this.y))
     if (mutate) { this.assign(newVect.x, newVect.y) } else { return newVect }
@@ -49,6 +46,12 @@ class Vector2 {
     if (mutate) { this.divideScalar(Math.sqrt(this.x ** 2 + this.y ** 2), true) }
     else { return this.divideScalar(Math.sqrt(this.x ** 2 + this.y ** 2)) }
   }
+
+  applyEach(mathFunction, mutate) {
+    let newVect = this.Vector2(mathFunction(this.x), mathFunction(this.y))
+    if (mutate) { this.assign(newVect.x, newVect.y) } else { return newVect }
+  }
+  applyAll(mathFunction) { return mathFunction(this.x, this.y) }
 
   length() { return Math.sqrt(this.x ** 2 + this.y ** 2) }
   slope() { return this.y / this.x }
@@ -59,9 +62,6 @@ class Vector2 {
     if (this.y != 0) { ySign = this.y / Math.abs(this.y) } else { ySign = 0 }
     return new Vector2(xSign, ySign)
   }
-  max() { return Math.max(this.x, this.y) }
-  min() { return Math.min(this.x, this.y) }
-
 
 }
 
