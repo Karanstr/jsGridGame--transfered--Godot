@@ -24,17 +24,23 @@ class WorldObject {
         let point = box[0], length = box[1].add(new Vector2(1, 1)).subtract(point);
         Render.drawBox(this.position.add(point.multiply(this.blockLength)),
           length.multiply(this.blockLength), Blocks.get(i));
-        if (this.debug) {
+        if (!this.debug) {
           Render.outlineBox(this.position.add(point.multiply(this.blockLength)),
-            length.multiply(this.blockLength));
+            length.multiply(this.blockLength), 'black');
         }
       })
+    }
+    for (let x = 0; x < this.grid.dimensions.x; x++) {
+      for (let y = 0; y < this.grid.dimensions.y; y++) {
+        let point = new Vector2(x, y);
+        Render.outlineBox(point.multiply(this.blockLength), this.blockLength, 'grey')
+      }
     }
   }
 
   //Eventually redo this so it only generates keys velocity matches
   //Instead of generating all keys, then matching them to velocity
-  pointToKey(point, velocity) {
+  pointToKey(point) {
     let translatedPoint = point.subtract(this.position);
     let offset = new Vector2(.01, .01), keys = [];
     for (let xShift = 0; xShift < 2; xShift++) {
@@ -55,6 +61,10 @@ class WorldObject {
       }
     }
     return keys
+  }
+
+  identifyCorners() {
+
   }
 
 
