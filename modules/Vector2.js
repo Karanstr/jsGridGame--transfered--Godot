@@ -48,7 +48,7 @@ class Vector2 {
   }
 
   applyEach(mathFunction, mutate) {
-    let newVect = this.Vector2(mathFunction(this.x), mathFunction(this.y))
+    let newVect = new Vector2(mathFunction(this.x), mathFunction(this.y))
     if (mutate) { this.assign(newVect.x, newVect.y) } else { return newVect }
   }
   applyAll(mathFunction) { return mathFunction(this.x, this.y) }
@@ -65,4 +65,4 @@ class Vector2 {
 
 }
 
-export { Vector2 as default }
+export default Vector2
