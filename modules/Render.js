@@ -27,7 +27,6 @@ const RenderFunctions = {
   },
 
   drawLine(start, end, color) {
-    if (end.type == 1) { end = end.add(start) }
     can.strokeStyle = color;
     can.beginPath();
     can.moveTo(start.x, start.y);
