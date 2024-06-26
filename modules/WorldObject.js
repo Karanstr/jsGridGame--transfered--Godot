@@ -12,7 +12,7 @@ class WorldObject {
     this.blockLength = this.length.divide(this.grid.dimensions);
     this.position = position.clone();
     this.velocity = new Vector2(0, 0);
-    this.debug = true;
+    this.draw = 'mesh';
   }
 
   //Figure out why html canvas sucks at drawing adjacent squares
@@ -24,11 +24,19 @@ class WorldObject {
         let point = box[0], length = box[1].add(new Vector2(1, 1)).subtract(point);
         Render.drawBox(this.position.add(point.multiply(this.blockLength)),
           length.multiply(this.blockLength), Blocks.get(i));
-        if (this.debug) {
+        if (this.draw == 'mesh') {
           Render.outlineBox(this.position.add(point.multiply(this.blockLength)),
             length.multiply(this.blockLength), 'black');
         }
       })
+    }
+    if (this.draw == 'grid') {
+      for (let x = 0; x < this.grid.dimensions.x; x++) {
+        for (let y = 0; y < this.grid.dimensions.y; y++) {
+          let point = new Vector2(x, y);
+          Render.outlineBox(point.multiply(this.blockLength), this.blockLength, 'black')
+        }
+      }
     }
   }
 
