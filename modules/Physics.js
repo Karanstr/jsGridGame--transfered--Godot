@@ -21,10 +21,10 @@ const Physics = {
       let gridPoint = new Vector2(boxData[shift.x].x + shift.x, boxData[shift.y].y + shift.y)
       let targetPoint = gridPoint.multiply(object.blockLength);
       let hitPoint = this.pointPassCheck(point, velocity, targetPoint);
-      if (hitPoint != false) {
+      if (hitPoint != false && velocity.length() != 0) {
+        Render.drawLine(point, targetPoint, 'black');
         Render.drawLine(point, hitPoint[0], 'green');
-        Render.drawLine(point, targetPoint, 'black')
-        Render.drawPoint(hitPoint[0], 'yellow')
+        Render.drawPoint(hitPoint[0], 'yellow');
       }
     }
   },
