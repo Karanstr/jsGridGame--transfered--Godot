@@ -131,18 +131,21 @@ class Grid {
     return saveData
   }
 
-  //ADD MESHING UPON LOAD AT SOME POINT
-
+  //Only allows loading of an entire grid, partial loading will lead to issues
   //Assumes only a single hexadecimal character is used for block types
   //Not a problem right now, but problem when I add more than 16 block types..
   load(data) {
+    let seenData = new Set();
     let blocks = data.split(' '); blocks.pop();
     if (blocks.length > this.dimensions.x * this.dimensions.y) { throw "Too many blocks" }
     blocks.forEach((block) => {
       let key = parseInt(block.substring(0, block.length - 1), 16)
       let data = parseInt(block[block.length - 1], 16);
       this.modify(key, data);
+      seenData.add(data);
     })
+    this.shapes = []; this.keyInShape = [];
+    seenData.forEach((data) => { this.shapes[data] = this.greedyMesh(data) })
     return true
   }
 
