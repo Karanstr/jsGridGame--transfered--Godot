@@ -4,6 +4,8 @@ import Grid from "./Grid.js"
 import Vector2 from "./Vector2.js"
 import Render from "./Render.js"
 
+
+
 class WorldObject {
   //Figure out the distinction between world position and screen position?
   constructor(position, length, tableSize, defaultValue) {
@@ -18,7 +20,7 @@ class WorldObject {
   //Figure out why html canvas sucks at drawing adjacent squares
   Render() {
     for (let i = 0; i < this.grid.binaryGrids.length; i++) {
-      let boxes = Render.greedyMesh(this.grid.binaryGrids[i]);
+      let boxes = this.grid.meshGreedily(this.grid.binaryGrids[i]);
       if (boxes.length == 0) { continue }
       boxes.forEach((box) => {
         let point = box[0], length = box[1].add(new Vector2(1, 1)).subtract(point);
@@ -68,7 +70,6 @@ class WorldObject {
   identifyCorners() {
 
   }
-
 
 }
 
