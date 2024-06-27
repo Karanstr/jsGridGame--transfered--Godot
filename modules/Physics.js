@@ -1,48 +1,55 @@
+"use strict";
 
-import Vector2 from "./Vector2.js";
-export { PhysicsObject as default }
+import Vector2 from "./Vector2.js"
+import Render from "./Render.js"
 
 
-class PhysicsObject {
-  constructor(x, y, drag) {
-    this.position = new Vector2(x, y, 0);
-    this.rotation = 0;
-    this.velocity = new Vector2(0, 0, 1)
-    this.acceleration = new Vector2(0, 0, 1)
-    this.decay = drag;
-    this.mass;
-  }
+const Physics = {
 
-  applyForce(acceleration) {
-    this.acceleration.add(acceleration, true);
-  }
+  velocityToOffset(velocity) {
+    return velocity.sign().divideScalar(2).applyEach(Math.ceil);
+  },
 
-  updateVelocity() {
-    this.velocity.add(this.acceleration, true);
-    //Easy drag until I think of a better solution
-    this.velocity.multiplyScalar(this.decay, true);
-    //Bring axis to rest after it's moving by less than .001 (units?)
-    if (Math.abs(this.velocity.x) < .001) { this.velocity.x = 0 }
-    if (Math.abs(this.velocity.y) < .001) { this.velocity.y = 0 }
-    //Acceleration has been applied, now it's set back to 0
-    this.acceleration.assign(0, 0);
-  }
+  physFunction(point, velocity, object) {
+    let key = object.pointToKey(point)[0];
+    if (key == undefined) {
+      return false
+    }
+    let boxData = object.grid.shapes[object.grid.read(key)][object.grid.keyInShape[key]];
+    if (key != undefined) {
+      let shift = this.velocityToOffset(velocity)
+      let gridPoint = new Vector2(boxData[shift.x].x + shift.x, boxData[shift.y].y + shift.y)
+      let targetPoint = gridPoint.multiply(object.blockLength);
+      let hitPoint = this.pointPassCheck(point, velocity, targetPoint);
+      if (hitPoint != false && velocity.length() != 0) {
+        Render.drawLine(point, targetPoint, 'black');
+        Render.drawLine(point, hitPoint[0], 'green');
+        Render.drawPoint(hitPoint[0], 'yellow');
+      }
+    }
+  },
 
-  applyPartialVelocity(velocity) {
-    //Assumes this is being used to step through collisions and as such
-    //Expects velocity to end up at 0 (Probably a bad way to do it)
-    //Velocity must be set back to original at some point or else
-    //Sad things happen
-    this.position.add(velocity, true);
-    this.velocity.subtract(velocity, true);
-  }
-
-  applyMovement(velocity) {
-    this.position.add(velocity, true);
-  }
-
-  updatePosition() {
-    this.position.add(this.velocity, true);
-  }
+  pointPassCheck(point, velocity, targetPoint) {
+    let offset = targetPoint.subtract(point);
+    //If we have enough velocity to reach targetPoint
+    //if (offset.abs().subtract(velocity.abs()).applyAll(Math.min) <= 0) {
+    let slopeToTarget = Math.abs(offset.slope());
+    let velocitySlope = velocity.slope();
+    let hitPoint = new Vector2(), direction = new Vector2(0, 0);
+    if (slopeToTarget > Math.abs(velocitySlope)) { //Hitting wall to the left or right
+      hitPoint.assign(targetPoint.x, point.y + offset.x * velocitySlope);
+      direction.x = velocity.sign().x;
+    }
+    else if (slopeToTarget < Math.abs(velocitySlope)) { //Hitting wall to the up or down
+      hitPoint.assign(point.x + offset.y / velocitySlope, targetPoint.y);
+      direction.y = velocity.sign().y;
+    } //Else hitting corner
+    else { hitPoint.assign(targetPoint.x, targetPoint.y); direction.add(velocity.sign) }
+    return [hitPoint, direction];
+    // }
+    return false //Point doesn't pass targetPoint
+  },
 
 }
+
+export default Physics
