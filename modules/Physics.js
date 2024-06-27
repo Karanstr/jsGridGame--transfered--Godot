@@ -12,15 +12,18 @@ const Physics = {
 
   physFunction(point, velocity, object) {
     let key = object.pointToKey(point)[0];
-    let gridPoint = object.grid.dehash(key)
+    if (key == undefined) {
+      return false
+    }
+    let boxData = object.grid.shapes[object.grid.read(key)][object.grid.keyInShape[key]];
     if (key != undefined) {
-      let topLeft = gridPoint.multiply(object.blockLength);
-
-      let offset = this.velocityToOffset(velocity)
-      let targetPoint = topLeft.add(object.blockLength.multiply(offset));
+      let shift = this.velocityToOffset(velocity)
+      let gridPoint = new Vector2(boxData[shift.x].x + shift.x, boxData[shift.y].y + shift.y)
+      let targetPoint = gridPoint.multiply(object.blockLength);
       let hitPoint = this.pointPassCheck(point, velocity, targetPoint);
       if (hitPoint != false) {
         Render.drawLine(point, hitPoint[0], 'green');
+        Render.drawLine(point, targetPoint, 'black')
         Render.drawPoint(hitPoint[0], 'yellow')
       }
     }

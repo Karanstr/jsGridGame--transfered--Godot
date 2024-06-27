@@ -19,7 +19,7 @@ const a = new WorldObject(
   1);
 window.a = a;
 const p = {
-  position: new Vector2(0, 0),
+  position: new Vector2(1, 1),
   velocity: new Vector2(0, 0)
 }
 window.p = p;
@@ -36,7 +36,8 @@ onmousedown = (mouse) => {
     mouse.pageX < canData.right) {
     let key = Math.max(...window.currentEdit.pointToKey(new Vector2(mouse.offsetX, mouse.offsetY)));
     let color = Number(document.getElementById('colorField').value);
-    window.currentEdit.grid.modify(key, color);
+    if (color > 1) { color = 1 }
+    window.currentEdit.grid.modify(key, color, true);
   }
 }
 

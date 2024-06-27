@@ -7,11 +7,11 @@ import Render from "./Render.js"
 
 
 class WorldObject {
-  //Figure out the distinction between world position and screen position?
+  //Figure out the distinction between world position and screen position
   constructor(position, length, tableSize, defaultValue) {
     this.grid = new Grid(tableSize, defaultValue);
-    this.length = length.clone();
-    this.blockLength = this.length.divide(this.grid.dimensions);
+    this.gridLength = length.clone();
+    this.blockLength = this.gridLength.divide(this.grid.dimensions);
     this.position = position.clone();
     this.velocity = new Vector2(0, 0);
     this.draw = 'mesh';
@@ -19,9 +19,9 @@ class WorldObject {
 
   //Figure out why html canvas sucks at drawing adjacent squares
   Render() {
-    for (let i = 0; i < this.grid.binaryGrids.length; i++) {
-      let boxes = this.grid.meshGreedily(this.grid.binaryGrids[i]);
-      if (boxes.length == 0) { continue }
+    for (let i = 0; i < this.grid.shapes.length; i++) {
+      let boxes = this.grid.shapes[i];
+      if (boxes == undefined || boxes.length == 0) { continue }
       boxes.forEach((box) => {
         let point = box[0], length = box[1].add(new Vector2(1, 1)).subtract(point);
         Render.drawBox(this.position.add(point.multiply(this.blockLength)),
@@ -43,7 +43,7 @@ class WorldObject {
   }
 
   //Eventually redo this so it only generates keys velocity matches
-  //Instead of generating all keys, then matching them to velocity
+  //instead of generating all keys then culling them
   pointToKey(point) {
     let translatedPoint = point.subtract(this.position);
     let offset = new Vector2(.01, .01), keys = [];
@@ -60,7 +60,7 @@ class WorldObject {
           let limit = offset.y - yShift * offset.y * 2
           scaledY = Math.floor((translatedPoint.y + limit) / this.blockLength.y)
         }
-        try { keys.push(this.grid.hash(scaledX, scaledY)) }
+        try { keys.push(this.grid.encode(scaledX, scaledY)) }
         catch (error) { keys.push(undefined) }
       }
     }

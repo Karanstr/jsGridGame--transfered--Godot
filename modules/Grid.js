@@ -10,28 +10,41 @@ class Grid {
     this.dimensions = dimensions.clone()
     this.xOffset = (this.dimensions.y - 1).toString(2).length;
     this.data = [];
-    this.binaryGrids = [];
+    this.shapes = [];
+    this.keyInShape = []
     //Fills each block with defaultValue
     let keys = this.genKeys(0, 0, this.dimensions.x, this.dimensions.y);
     keys.forEach((key) => { this.modify(key, defaultValue) })
+    this.shapes[defaultValue] = this.greedyMesh(defaultValue);
   }
 
-  meshGreedily(binaryGrid) {
-    if (binaryGrid == undefined) { return [] }
-    let gridData = Array.from(binaryGrid), shapeList = [];
+  //Maybe store all this also in this.data instead of making another array?
+  assignBlocks(shapeList) {
+    for (let i = 0; i < shapeList.length; i++) {
+      let shape = shapeList[i]
+      let keys = this.genKeys(shape[0].x, shape[0].y, shape[1].x + 1, shape[1].y + 1);
+      keys.forEach((key) => {
+        this.keyInShape[key] = i
+      })
+    }
+  }
+
+  greedyMesh(data) {
+    //Generate a binary representation of grid
+    let gridData = this.convertToBinary(data), shapeList = [];
     //Until all shapes have been accounted for
     while (Math.max(...gridData) != 0) {
       //Create a new, empty shape mask
       let currentShapeMask = 0;
       let steps = 0, maskLength = 0;
       let startHeight, endHeight;
-      for (let y = 0; y < gridData.length; y++) {
+      for (let x = 0; x < gridData.length; x++) {
         //If the current shape is empty, fill it
         if (currentShapeMask == 0) {
           //Can't grab a shape if the layer is empty
-          if (gridData[y] == 0) { continue }
-          startHeight = y;
-          let line = gridData[y];
+          if (gridData[x] == 0) { continue }
+          startHeight = x;
+          let line = gridData[x];
           //Remember how many steps to the left we've taken before finding a shape
           while (line % 2 == 0) { steps += 1; line >>= 1 }
           //Extend the mask for each adjacent set bit
@@ -43,54 +56,55 @@ class Grid {
           currentShapeMask <<= steps;
         }
         //Determine the overlap between the current mask and the current line
-        let newShapeMask = currentShapeMask & gridData[y];
+        let newShapeMask = currentShapeMask & gridData[x];
         //If the current line contains the mask completely, remove that data
-        if (newShapeMask == currentShapeMask) { gridData[y] &= ~currentShapeMask; }
-        else { endHeight = y - 1; break }
-        //And if we've reached the final height and are about to terminate, stop looking
-        if (y + 1 == gridData.length) { endHeight = y; break }
+        if (newShapeMask == currentShapeMask) { gridData[x] &= ~currentShapeMask; }
+        else { endHeight = x - 1; break }
+        //And if we've reached the final column and are about to terminate, stop looking
+        if (x + 1 == gridData.length) { endHeight = x; break }
       }
-      let startPos = new Vector2(steps, startHeight)
-      let endPos = new Vector2(maskLength + steps - 1, endHeight)
+      let startPos = new Vector2(startHeight, steps)
+      let endPos = new Vector2(endHeight, maskLength + steps - 1)
       shapeList.push([startPos, endPos])
     }
+    this.assignBlocks(shapeList);
     return shapeList
   }
 
-  //Recieves a Set()
-  convertToBinary(setData) {
+  convertToBinary(data) {
     let binaryGrid = [];
-    for (let y = 0; y < this.dimensions.y; y++) {
-      binaryGrid[y] = 0
-      for (let x = this.dimensions.x - 1; x >= 0; x--) {
-        binaryGrid[y] <<= 1;
-        if (setData.has(this.read(this.hash(x, y)))) { binaryGrid[y] += 1 }
+    //For each column
+    for (let x = 0; x < this.dimensions.x; x++) {
+      binaryGrid[x] = 0
+      //For each box in the column
+      for (let y = this.dimensions.y - 1; y >= 0; y--) {
+        binaryGrid[x] <<= 1;
+        if (this.read(this.encode(x, y)) == data) { binaryGrid[x] += 1 }
       }
     }
     return binaryGrid
   }
 
-  hash(x, y) {
+  encode(x, y) {
     if (x >= this.dimensions.x || y >= this.dimensions.y || Math.min(x, y) < 0) {
       throw RangeError("Value isn't within table boundary");
     }
     return (x << this.xOffset) + y
   }
 
-  //Shut up, I know hashes are supposed to be one way
-  dehash(key) {
-    if (key < 0 || key > (2 ** (this.maxBits * 2)) - 1) {
+  decode(key) {
+    if (key < 0 || key > this.encode(this.dimensions.x - 1, this.dimensions.y - 1)) {
       throw RangeError("Value isn't within table boundary");
     }
-    return new Vector2(key >> this.xOffset, key % 2 ** this.xOffset)
+    return new Vector2(key >> this.xOffset, key % (2 ** this.xOffset))
   }
 
-  modify(key, value) {
+  modify(key, value, updateMesh) {
     let oldValue = this.data[key];
     this.data[key] = value;
-    this.binaryGrids[value] = this.convertToBinary(new Set([value]));
-    if (oldValue != undefined) {
-      this.binaryGrids[oldValue] = this.convertToBinary(new Set([oldValue]));
+    if (updateMesh) {
+      this.shapes[value] = this.greedyMesh(value);
+      this.shapes[oldValue] = this.greedyMesh(oldValue);
     }
   }
 
@@ -100,14 +114,10 @@ class Grid {
     let keys = [];
     for (let x = initialX; x < endX; x++) {
       for (let y = initialY; y < endY; y++) {
-        keys.push(this.hash(x, y))
+        keys.push(this.encode(x, y))
       }
     }
     return keys
-  }
-
-  resizeTable(rows, columns) {
-    //Not my problem, this is another me's job
   }
 
   //This'll get kinda big eventually, one day compression'll exist tho
@@ -120,6 +130,8 @@ class Grid {
     })
     return saveData
   }
+
+  //ADD MESHING UPON LOAD AT SOME POINT
 
   //Assumes only a single hexadecimal character is used for block types
   //Not a problem right now, but problem when I add more than 16 block types..
