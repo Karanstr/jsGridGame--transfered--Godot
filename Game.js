@@ -13,8 +13,8 @@ const canvas = document.getElementById("canvas");
 let canData = canvas.getBoundingClientRect();
 window.canData = canData
 const a = new WorldObject(
-  new Vector2(0, 0),
-  new Vector2(500, 500),
+  new Vector2(125, 125),
+  new Vector2(250, 250),
   new Vector2(24, 24),
   1);
 window.a = a;
