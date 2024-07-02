@@ -7,7 +7,6 @@ import Render from "./Render.js"
 
 
 class WorldObject {
-  //Figure out the distinction between world position and screen position
   constructor(position, length, tableSize, defaultValue) {
     this.grid = new Grid(tableSize, defaultValue);
     this.gridLength = length.clone();
@@ -17,7 +16,6 @@ class WorldObject {
     this.draw = 'mesh';
   }
 
-  //Figure out why html canvas sucks at drawing adjacent squares
   Render() {
     for (let i = 0; i < this.grid.shapes.length; i++) {
       let boxes = this.grid.shapes[i];

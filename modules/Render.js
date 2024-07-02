@@ -12,6 +12,7 @@ const RenderFunctions = {
   drawBox(pos, length, color) {
     can.fillStyle = color;
     can.fillRect(pos.x, pos.y, length.x, length.y);
+    this.outlineBox(pos, length, color)
   },
 
   outlineBox(pos, length, color) {
