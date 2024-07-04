@@ -3,62 +3,80 @@
 import Vector2 from "./Vector2.js"
 import Render from "./Render.js"
 
+class colData {
+  constructor(point, hitWall, time) {
+    this.point = point;
+    this.hitWall = hitWall;
+    this.timeToHit = time;
+  }
+}
 
-const Physics = {
-
-  velocityToOffset(velocity) {
-    return velocity.sign().divideScalar(2).applyEach(Math.ceil);
-  },
-
-  getAngle(origin, point) {
-    let delta = point.subtract(origin);
+class Ray {
+  constructor(position, velocity) {
+    this.position = position;
+    this.velocity = velocity;
+    this.velSign = velocity.sign();
+    this.direction = velocity.normalize();
+    this.angle = this.getAngleTo(this.position.add(this.direction));
+  }
+  getAngleTo(point) {
+    let delta = point.subtract(this.position);
     let angle = delta.applyAll(Math.atan2) * 180 / Math.PI;
     if (angle < 0) { angle += 360 }
     return angle
-  },
+  }
+}
 
-  physFunction(point, velocity, object) {
-    if (velocity.length() == 0) { return }
-    let key = object.pointToKey(point)[0];
-    let direction = velocity.normalize();
-    let shift = this.velocityToOffset(direction);
-    let checkPoint;
+const Physics = {
+
+  findHitPoints(point, velocity, object) {
+    if (velocity.length() == 0) { return false }
+    let ray = new Ray(point, velocity);
+    let keys = object.cullKeys(object.pointToKey(ray.position), ray.direction);
+    let hitPoints = [];
+    for (let i = 0; i < keys.length; i++) {
+      let boundaryPoint = this.findBoundaryPoint(ray, keys[i], object);
+      if (boundaryPoint != undefined) {
+        let data = this.timeToBoundary(ray, boundaryPoint);
+        if (data == false) { console.log("Something's very wrong") }
+        else {
+          Render.drawLine(point, boundaryPoint, 'green');
+          Render.drawLine(point, data.point, 'green');
+          Render.drawPoint(data.point, 'yellow');
+          hitPoints.push(data)
+        }
+      }
+
+    }
+  }
+  ,
+
+  //I don't like that I'm passing key here
+  findBoundaryPoint(ray, key, object) {
+    let shift = ray.velSign.divideScalar(2).applyEach(Math.ceil);
+    let boundaryPoint;
     //If within object
     if (key != undefined) {
       let boxData = object.grid.shapes[object.grid.read(key)][object.grid.keyInShape[key]];
       let gridPoint = new Vector2(boxData[shift.x].x + shift.x, boxData[shift.y].y + shift.y)
-      checkPoint = gridPoint.multiply(object.blockLength).add(object.position);
+      boundaryPoint = gridPoint.multiply(object.blockLength).add(object.position);
     } //If outside object
     else {
       let inverseShift = shift.subtract(new Vector2(1, 1)).applyEach(Math.abs);
-      let targetPoint = object.position.add(object.gridLength.multiply(shift));
-      let inversePoint = object.position.add(object.gridLength.multiply(inverseShift));
-      let bounds = [
-        new Vector2(targetPoint.x, inversePoint.y),
-        new Vector2(inversePoint.x, targetPoint.y)
-      ]
-      if (this.externalCheck(point, direction, bounds)) { checkPoint = inversePoint }
-      Render.drawLine(point, bounds[0], 'black');
-      Render.drawLine(point, bounds[1], 'black');
+      let aCorner = object.position.add(object.gridLength.multiply(shift));
+      let iCorner = object.position.add(object.gridLength.multiply(inverseShift));
+      if (this.externalCheck(ray, aCorner, iCorner)) { boundaryPoint = iCorner }
     }
-    if (checkPoint != undefined) {
-      let hitPoint = this.pointPassCheck(point, velocity, checkPoint);
-      if (hitPoint != false) {
-        Render.drawLine(point, checkPoint, 'black');
-        Render.drawLine(point, hitPoint[0], 'green');
-        Render.drawPoint(hitPoint[0], 'yellow');
-      }
-      if (hitPoint[2]) { console.log(hitPoint[2]) }
-    }
+    return boundaryPoint
   },
 
-  externalCheck(origin, direction, bounds) {
-    let angles = [
-      this.getAngle(origin, bounds[0]),
-      this.getAngle(origin, bounds[1])
-    ]
+  externalCheck(ray, aCorner, iCorner) {
+    let bounds = [new Vector2(aCorner.x, iCorner.y), new Vector2(iCorner.x, aCorner.y)];
+    let angles = [ray.getAngleTo(bounds[0]), ray.getAngleTo(bounds[1])]
+    Render.drawLine(ray.position, bounds[0], 'black');
+    Render.drawLine(ray.position, bounds[1], 'black');
     let angle1 = Math.max(...angles), angle2 = Math.min(...angles) - angle1;
-    let dirAngle = this.getAngle(origin, origin.add(direction)) - angle1;
+    let dirAngle = ray.angle - angle1;
     dirAngle = dirAngle >= 0 ? dirAngle : dirAngle + 360
     angle2 = angle2 >= 0 ? angle2 : angle2 + 360;
     if (angle1 - Math.min(...angles) < 180) {
@@ -67,35 +85,22 @@ const Physics = {
     else if (dirAngle <= angle2) { return true }
   },
 
-  pointPassCheck(point, velocity, targetPoint) {
-    let didItPass = false;
-    let offset = targetPoint.subtract(point), offsetSign = offset.sign();
-    let slopeToTarget = Math.abs(offset.slope());
-    let velSlope = velocity.slope(), velSign = velocity.sign(), absVel = velocity.abs();
-    let hitPoint, direction = new Vector2(0, 0);
-    if (slopeToTarget > Math.abs(velSlope) && offsetSign.x == velSign.x) { //Hitting wall to the left or right
-      hitPoint = new Vector2(targetPoint.x, point.y + offset.x * velSlope);
-      direction.assign(velSign.x, 0);
+  timeToBoundary(ray, boundaryPoint) {
+    let time = boundaryPoint.subtract(ray.position).divide(ray.velocity);
+    let compareTime = time.clone()
+    if (time.x < 0 && time.y < 0) { return false }
+    if (time.x < 0) { compareTime.x = Infinity } if (time.y < 0) { compareTime.y = Infinity }
+    let hitPoint, hitWall;
+    if (compareTime.x < compareTime.y) { //Hitting wall to the left or right
+      hitPoint = new Vector2(boundaryPoint.x, ray.position.y + ray.velocity.y * time.x);
+      hitWall = new Vector2(ray.velSign.x, 0);
     }
-    else if (slopeToTarget < Math.abs(velSlope) && offsetSign.y != velSign.y) {
-      hitPoint = new Vector2(targetPoint.x, point.y + offset.x * velSlope);
-      direction.assign(velSign.x, 0);
+    else if (compareTime.y < compareTime.x) { //Hitting wall above or below
+      hitPoint = new Vector2(ray.position.x + ray.velocity.x * time.y, boundaryPoint.y);
+      hitWall = new Vector2(0, ray.velSign.y);
     }
-    else if (slopeToTarget < Math.abs(velSlope) && offsetSign.y == velSign.y) { //Hitting wall to the up or down
-      hitPoint = new Vector2(point.x + offset.y / velSlope, targetPoint.y);
-      direction.assign(0, velSign.y);
-    }
-    else if (slopeToTarget > Math.abs(velSlope) && offsetSign.x != velSign.x) {
-      hitPoint = new Vector2(point.x + offset.y / velSlope, targetPoint.y);
-      direction.assign(0, velSign.y);
-    }//Else hitting corner
-    else { hitPoint = new Vector2(targetPoint.x, targetPoint.y); direction = velSign }
-    //If we will cross over targetPoint
-    if (((Math.abs(offset.x) <= absVel.x) && offsetSign.x == velSign.x && velocity.x != 0)
-      || ((Math.abs(offset.y) <= absVel.y) && offsetSign.y == velSign.y && velocity.y != 0)) {
-      didItPass = true
-    }
-    return [hitPoint, direction, didItPass];
+    else { hitPoint = boundaryPoint; hitWall = ray.velSign } //Hitting corner
+    return new colData(hitPoint, hitWall, time)
   },
 
 }

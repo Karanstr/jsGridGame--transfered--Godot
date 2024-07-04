@@ -23,9 +23,7 @@ class Grid {
     for (let i = 0; i < shapeList.length; i++) {
       let shape = shapeList[i]
       let keys = this.genKeys(shape[0].x, shape[0].y, shape[1].x + 1, shape[1].y + 1);
-      keys.forEach((key) => {
-        this.keyInShape[key] = i
-      })
+      keys.forEach((key) => { this.keyInShape[key] = i })
     }
   }
 
@@ -73,11 +71,9 @@ class Grid {
 
   convertToBinary(data) {
     let binaryGrid = [];
-    //For each column
-    for (let x = 0; x < this.dimensions.x; x++) {
+    for (let x = 0; x < this.dimensions.x; x++) {//For each column
       binaryGrid[x] = 0
-      //For each box in the column
-      for (let y = this.dimensions.y - 1; y >= 0; y--) {
+      for (let y = this.dimensions.y - 1; y >= 0; y--) {//For each box in the column
         binaryGrid[x] <<= 1;
         if (this.read(this.encode(x, y)) == data) { binaryGrid[x] += 1 }
       }

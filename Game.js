@@ -72,7 +72,7 @@ window.gameStep = function () {
   Render.drawBox(new Vector2(0, 0), new Vector2(500, 500), 'white')
   renderList.forEach((object) => { object.Render() })
   Render.drawPoint(p.position, 'cyan');
-  Physics.physFunction(p.position, p.velocity, a)
+  Physics.findHitPoints(p.position, p.velocity, a)
 
   window.currentMove.position.add(window.currentMove.velocity, true);
   window.currentMove.velocity.assign(0, 0)

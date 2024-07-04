@@ -1,10 +1,8 @@
 "use strict";
 
-import Grid from "./Grid.js"
+import Grid from "./WGrid.js"
 import Vector2 from "./Vector2.js"
 import Render from "./Render.js"
-
-
 
 class WorldObject {
   constructor(position, length, tableSize, defaultValue) {
@@ -40,29 +38,40 @@ class WorldObject {
     }
   }
 
-  //Eventually redo this so it only generates keys velocity matches
-  //instead of generating all keys then culling them
   pointToKey(point) {
     let translatedPoint = point.subtract(this.position);
-    let offset = new Vector2(.01, .01), keys = [];
-    for (let xShift = 0; xShift < 2; xShift++) {
-      for (let yShift = 0; yShift < 2; yShift++) {
-        let scaledX, scaledY;
-        if (translatedPoint.x == 0 && xShift == 0) { scaledX = -1 }
-        else {
-          let limit = offset.x - xShift * offset.x * 2
-          scaledX = Math.floor((translatedPoint.x + limit) / this.blockLength.x)
+    let offset = this.blockLength.divideScalar(100), keys = [];
+    for (let xShift = -1; xShift < 2; xShift += 2) {
+      for (let yShift = -1; yShift < 2; yShift += 2) {
+        //Stupid edgecase
+        if ((translatedPoint.x <= 0 && xShift == -1) || (translatedPoint.y <= 0 && yShift == -1)) {
+          keys.push(undefined); continue
         }
-        if (translatedPoint.y == 0 && yShift == 0) { scaledY = -1 }
-        else {
-          let limit = offset.y - yShift * offset.y * 2
-          scaledY = Math.floor((translatedPoint.y + limit) / this.blockLength.y)
-        }
-        try { keys.push(this.grid.encode(scaledX, scaledY)) }
-        catch (error) { keys.push(undefined) }
+        try {
+          keys.push(this.grid.encode(
+            Math.floor((translatedPoint.x + xShift * offset.x) / this.blockLength.x),
+            Math.floor((translatedPoint.y + yShift * offset.y) / this.blockLength.y)
+          ))
+        } catch (error) { keys.push(undefined) }
       }
     }
     return keys
+  }
+
+  cullKeys(keys, velocity) {
+    let velSign = velocity.sign();
+    let checkX, checkY;
+    let result = [];
+    if (velSign.x == 0) { checkX = [0, 1] }
+    else { checkX = [Math.ceil(velSign.x / 2)] }
+    if (velSign.y == 0) { checkY = [0, 1] }
+    else { checkY = [Math.ceil(velSign.y / 2)] }
+    for (let x = 0; x < checkX.length; x++) {
+      for (let y = 0; y < checkY.length; y++) {
+        result.push(keys[(checkX[x] << 1) + checkY[y]])
+      }
+    }
+    return result
   }
 
   identifyCorners() {
