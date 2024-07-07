@@ -2,23 +2,22 @@
 
 import Vector2 from "./Vector2.js";
 //Most space efficient when rows == columns and rows/columns are a power of 2.
-//After that most efficient when columns > rows 
+//After that most efficient when columns > rows
 //If we go above 31 in either, bad things start happening bc we're using signed 32 bit ints
 
 class Grid {
-  constructor(dimensions, defaultValue) {
+  constructor(dimensions, blockMap) {
     this.dimensions = dimensions.clone()
     this.xOffset = (this.dimensions.y - 1).toString(2).length;
     this.data = [];
-    this.shapes = [];
-    this.keyInShape = []
-    //Fills each block with defaultValue
-    let keys = this.genKeys(0, 0, this.dimensions.x, this.dimensions.y);
-    keys.forEach((key) => { this.modify(key, defaultValue) })
-    this.shapes[defaultValue] = this.greedyMesh(defaultValue);
+    this.keyInShape = [];
+    this.shapes = []; //Shapes of this block generated using greedymeshing
+    this.blockMap = blockMap; //Points to the blockmap, doesn't copy it
+    this.blockCount = []; //Count of each type of block in grid
+    for (let i = 0; i < this.blockMap.blocks.length; i++) { this.blockCount[i] = 0 }
+    this.modifyRect(new Vector2(0, 0), this.dimensions, 0); //Fill grid with initial value
   }
 
-  //Maybe store all this also in this.data instead of making another array?
   assignBlocks(shapeList) {
     for (let i = 0; i < shapeList.length; i++) {
       let shape = shapeList[i]
@@ -95,13 +94,25 @@ class Grid {
     return new Vector2(key >> this.xOffset, key % (2 ** this.xOffset))
   }
 
-  modify(key, value, updateMesh) {
+  modify(key, value, remesh) {
     let oldValue = this.data[key];
-    this.data[key] = value;
-    if (updateMesh) {
-      this.shapes[value] = this.greedyMesh(value);
-      this.shapes[oldValue] = this.greedyMesh(oldValue);
+    if (oldValue != value) {
+      this.data[key] = value;
+      if (oldValue != undefined) {
+        this.blockCount[oldValue] -= 1;
+        if (remesh) { this.shapes[oldValue] = this.greedyMesh(oldValue) }
+      }
+      this.blockCount[value] += 1;
+      if (remesh) { this.shapes[value] = this.greedyMesh(value) }
     }
+    return oldValue
+  }
+
+  modifyRect(start, end, value) {
+    let keys = this.genKeys(start.x, start.y, end.x, end.y);
+    let seenValues = new Set([value]);
+    keys.forEach((key) => { seenValues.add(this.modify(key, value)) })
+    seenValues.forEach((oldValue) => { this.shapes[oldValue] = this.greedyMesh(oldValue) })
   }
 
   read(key) { return this.data[key] }
@@ -127,9 +138,8 @@ class Grid {
     return saveData
   }
 
-  //Only allows loading of an entire grid, partial loading will lead to issues
   //Assumes only a single hexadecimal character is used for block types
-  //Not a problem right now, but problem when I add more than 16 block types..
+  //Not a problem right now, but problem when I add more than 16 block types
   load(data) {
     let seenData = new Set();
     let blocks = data.split(' '); blocks.pop();
@@ -137,6 +147,7 @@ class Grid {
     blocks.forEach((block) => {
       let key = parseInt(block.substring(0, block.length - 1), 16)
       let data = parseInt(block[block.length - 1], 16);
+      seenData.add(this.read(key));
       this.modify(key, data);
       seenData.add(data);
     })

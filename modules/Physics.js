@@ -7,7 +7,7 @@ class colData {
   constructor(point, hitWall, time) {
     this.point = point;
     this.hitWall = hitWall;
-    this.timeToHit = time;
+    this.time = time;
   }
 }
 
@@ -17,39 +17,43 @@ class Ray {
     this.velocity = velocity;
     this.velSign = velocity.sign();
     this.direction = velocity.normalize();
-    this.angle = this.getAngleTo(this.position.add(this.direction));
   }
-  getAngleTo(point) {
-    let delta = point.subtract(this.position);
-    let angle = delta.applyAll(Math.atan2) * 180 / Math.PI;
-    if (angle < 0) { angle += 360 }
-    return angle
-  }
+
 }
 
 const Physics = {
 
+  getAngleTo(origin, point) {
+    let delta = point.subtract(origin);
+    let angle = delta.applyAll(Math.atan2) * 180 / Math.PI;
+    if (angle < 0) { angle += 360 }
+    return angle
+  },
+
+  //Ew, have to cast rays from all four ..
   findHitPoints(point, velocity, object) {
     if (velocity.length() == 0) { return false }
     let ray = new Ray(point, velocity);
-    let keys = object.cullKeys(object.pointToKey(ray.position), ray.direction);
+    let keys = object.pointToKey(ray.position);
     let hitPoints = [];
-    for (let i = 0; i < keys.length; i++) {
+    for (let i = 0; i < 4; i++) {
       let boundaryPoint = this.findBoundaryPoint(ray, keys[i], object);
       if (boundaryPoint != undefined) {
         let data = this.timeToBoundary(ray, boundaryPoint);
-        if (data == false) { console.log("Something's very wrong") }
-        else {
-          Render.drawLine(point, boundaryPoint, 'green');
-          Render.drawLine(point, data.point, 'green');
-          Render.drawPoint(data.point, 'yellow');
-          hitPoints.push(data)
-        }
+        if (data == false) { continue }
+        hitPoints.push(data);
+        Render.drawLine(point, boundaryPoint, 'green');
+        Render.drawLine(point, data.point, 'green');
       }
-
     }
-  }
-  ,
+    let currentTime = Infinity; let currentData = undefined;
+    hitPoints.forEach((hit) => {
+      if (hit.time < currentTime && hit.time >= 0) { currentTime = hit.time; currentData = hit }
+    })
+    if (currentData != undefined) { Render.drawPoint(currentData.point, 'yellow') }
+    if (currentTime <= 1) { console.log('hit'); console.log(currentTime) }
+
+  },
 
   //I don't like that I'm passing key here
   findBoundaryPoint(ray, key, object) {
@@ -72,11 +76,11 @@ const Physics = {
 
   externalCheck(ray, aCorner, iCorner) {
     let bounds = [new Vector2(aCorner.x, iCorner.y), new Vector2(iCorner.x, aCorner.y)];
-    let angles = [ray.getAngleTo(bounds[0]), ray.getAngleTo(bounds[1])]
+    let angles = [this.getAngleTo(ray.position, bounds[0]), this.getAngleTo(ray.position, bounds[1])]
     Render.drawLine(ray.position, bounds[0], 'black');
     Render.drawLine(ray.position, bounds[1], 'black');
     let angle1 = Math.max(...angles), angle2 = Math.min(...angles) - angle1;
-    let dirAngle = ray.angle - angle1;
+    let dirAngle = this.getAngleTo(ray.position, ray.position.add(ray.direction)) - angle1;
     dirAngle = dirAngle >= 0 ? dirAngle : dirAngle + 360
     angle2 = angle2 >= 0 ? angle2 : angle2 + 360;
     if (angle1 - Math.min(...angles) < 180) {
@@ -93,13 +97,13 @@ const Physics = {
     let hitPoint, hitWall;
     if (compareTime.x < compareTime.y) { //Hitting wall to the left or right
       hitPoint = new Vector2(boundaryPoint.x, ray.position.y + ray.velocity.y * time.x);
-      hitWall = new Vector2(ray.velSign.x, 0);
+      hitWall = new Vector2(ray.velSign.x, 0); time = time.x;
     }
     else if (compareTime.y < compareTime.x) { //Hitting wall above or below
       hitPoint = new Vector2(ray.position.x + ray.velocity.x * time.y, boundaryPoint.y);
-      hitWall = new Vector2(0, ray.velSign.y);
+      hitWall = new Vector2(0, ray.velSign.y); time = time.y;
     }
-    else { hitPoint = boundaryPoint; hitWall = ray.velSign } //Hitting corner
+    else { hitPoint = boundaryPoint; hitWall = ray.velSign; time = time.x } //Hitting corner
     return new colData(hitPoint, hitWall, time)
   },
 

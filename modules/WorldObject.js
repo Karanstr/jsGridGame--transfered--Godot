@@ -5,8 +5,8 @@ import Vector2 from "./Vector2.js"
 import Render from "./Render.js"
 
 class WorldObject {
-  constructor(position, length, tableSize, defaultValue) {
-    this.grid = new Grid(tableSize, defaultValue);
+  constructor(position, length, tableSize, blockMap) {
+    this.grid = new Grid(tableSize, blockMap);
     this.gridLength = length.clone();
     this.blockLength = this.gridLength.divide(this.grid.dimensions);
     this.position = position.clone();
@@ -21,7 +21,7 @@ class WorldObject {
       boxes.forEach((box) => {
         let point = box[0], length = box[1].add(new Vector2(1, 1)).subtract(point);
         Render.drawBox(this.position.add(point.multiply(this.blockLength)),
-          length.multiply(this.blockLength), Blocks.get(i));
+          length.multiply(this.blockLength), this.grid.blockMap.getBlockData(i).color);
         if (this.draw == 'mesh') {
           Render.outlineBox(this.position.add(point.multiply(this.blockLength)),
             length.multiply(this.blockLength), 'black');
@@ -32,7 +32,7 @@ class WorldObject {
       for (let x = 0; x < this.grid.dimensions.x; x++) {
         for (let y = 0; y < this.grid.dimensions.y; y++) {
           let point = new Vector2(x, y);
-          Render.outlineBox(point.multiply(this.blockLength), this.blockLength, 'black')
+          Render.outlineBox(point.multiply(this.blockLength).add(this.position), this.blockLength, 'black')
         }
       }
     }
@@ -40,7 +40,7 @@ class WorldObject {
 
   pointToKey(point) {
     let translatedPoint = point.subtract(this.position);
-    let offset = this.blockLength.divideScalar(100), keys = [];
+    let offset = this.blockLength.divideScalar(2), keys = [];
     for (let xShift = -1; xShift < 2; xShift += 2) {
       for (let yShift = -1; yShift < 2; yShift += 2) {
         //Stupid edgecase
@@ -81,7 +81,3 @@ class WorldObject {
 }
 
 export default WorldObject
-
-const Blocks = new Map();
-Blocks.set(0, 'red')
-Blocks.set(1, 'blue')
