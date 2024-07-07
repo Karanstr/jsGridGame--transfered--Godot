@@ -34,24 +34,25 @@ const Physics = {
   findHitPoints(point, velocity, object) {
     if (velocity.length() == 0) { return false }
     let ray = new Ray(point, velocity);
-    let keys = object.pointToKey(ray.position);
+    let keys = new Set([...object.pointToKey(ray.position)])
     let hitPoints = [];
-    for (let i = 0; i < 4; i++) {
-      let boundaryPoint = this.findBoundaryPoint(ray, keys[i], object);
+    keys.forEach((key) => {
+      let boundaryPoint = this.findBoundaryPoint(ray, key, object);
       if (boundaryPoint != undefined) {
         let data = this.timeToBoundary(ray, boundaryPoint);
-        if (data == false) { continue }
-        hitPoints.push(data);
-        Render.drawLine(point, boundaryPoint, 'green');
-        Render.drawLine(point, data.point, 'green');
+        if (data != false) {
+          hitPoints.push(data);
+          Render.drawLine(point, boundaryPoint, 'green');
+          Render.drawLine(point, data.point, 'green');
+        }
       }
-    }
+    })
     let currentTime = Infinity; let currentData = undefined;
     hitPoints.forEach((hit) => {
       if (hit.time < currentTime && hit.time >= 0) { currentTime = hit.time; currentData = hit }
     })
     if (currentData != undefined) { Render.drawPoint(currentData.point, 'yellow') }
-    if (currentTime <= 1) { console.log('hit'); console.log(currentTime) }
+    if (currentTime < 1) { console.log('hit'); console.log(currentTime) }
 
   },
 

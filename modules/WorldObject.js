@@ -40,7 +40,7 @@ class WorldObject {
 
   pointToKey(point) {
     let translatedPoint = point.subtract(this.position);
-    let offset = this.blockLength.divideScalar(2), keys = [];
+    let offset = this.blockLength.divideScalar(100), keys = [];
     for (let xShift = -1; xShift < 2; xShift += 2) {
       for (let yShift = -1; yShift < 2; yShift += 2) {
         //Stupid edgecase
