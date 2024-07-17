@@ -1,27 +1,29 @@
 "use strict";
 
 import Vector2 from "./Vector2.js";
-//Most space efficient when rows == columns and rows/columns are a power of 2.
-//After that most efficient when columns > rows
-//If we go above 31 in either, bad things start happening bc we're using signed 32 bit ints
+
+//If we go above 31 in either dimension
+//bad things start happening bc we're using signed 32 bit ints for meshing
 
 class Grid {
   constructor(dimensions, blockMap) {
     this.dimensions = dimensions.clone()
-    this.xOffset = (this.dimensions.y - 1).toString(2).length;
+    this.area = dimensions.x * dimensions.y;
     this.data = [];
     this.keyInShape = [];
     this.shapes = []; //Shapes of this block generated using greedymeshing
     this.blockMap = blockMap; //Points to the blockmap, doesn't copy it
     this.blockCount = []; //Count of each type of block in grid
-    for (let i = 0; i < this.blockMap.blocks.length; i++) { this.blockCount[i] = 0 }
-    this.modifyRect(new Vector2(0, 0), this.dimensions, 0); //Fill grid with initial value
+    //Fill grid with initial value
+    for (let i = 0; i < this.blockMap.blocks.length; i++) { this.blockCount[i] = 0; }
+    for (let i = 0; i < this.area; i++) { this.data[i] = 0 }
+    this.shapes[0] = this.greedyMesh(0);
   }
 
   assignBlocks(shapeList) {
     for (let i = 0; i < shapeList.length; i++) {
       let shape = shapeList[i]
-      let keys = this.genKeys(shape[0].x, shape[0].y, shape[1].x + 1, shape[1].y + 1);
+      let keys = this.genKeys(shape[0].x, shape[0].y, shape[1].x, shape[1].y);
       keys.forEach((key) => { this.keyInShape[key] = i })
     }
   }
@@ -84,14 +86,14 @@ class Grid {
     if (x >= this.dimensions.x || y >= this.dimensions.y || Math.min(x, y) < 0) {
       throw RangeError("Value isn't within table boundary");
     }
-    return (x << this.xOffset) + y
+    return (x * this.dimensions.y) + y
   }
 
   decode(key) {
-    if (key < 0 || key > this.encode(this.dimensions.x - 1, this.dimensions.y - 1)) {
+    if (key < 0 || key >= this.area) {
       throw RangeError("Value isn't within table boundary");
     }
-    return new Vector2(key >> this.xOffset, key % (2 ** this.xOffset))
+    return new Vector2(Math.floor(key / this.dimensions.y), key % this.dimensions.y)
   }
 
   modify(key, value, remesh) {
@@ -118,10 +120,13 @@ class Grid {
   read(key) { return this.data[key] }
 
   genKeys(initialX, initialY, endX, endY) {
-    let keys = [];
-    for (let x = initialX; x < endX; x++) {
-      for (let y = initialY; y < endY; y++) {
-        keys.push(this.encode(x, y))
+    let firstKey = this.encode(initialX, initialY);
+    let lastKey = this.encode(endX, endY);
+    let keys = [firstKey];
+    let currentKey = firstKey;
+    for (currentKey; currentKey < lastKey; currentKey += this.dimensions.y) {
+      for (currentKey; currentKey < lastKey; currentKey++) {
+        keys.push(currentKey)
       }
     }
     return keys
@@ -130,11 +135,9 @@ class Grid {
   //This'll get kinda big eventually, one day compression'll exist tho
   save() {
     let saveData = "";
-    let keys = this.genKeys(0, 0, this.dimensions.x, this.dimensions.y);
-    keys.forEach((key) => {
-      let data = this.read(key);
-      saveData += key.toString(16) + data.toString(16) + ' ';
-    })
+    for (let key = 0; key < this.area; key++) {
+      saveData += key.toString(16) + this.read(key).toString(16) + ' ';
+    }
     return saveData
   }
 
